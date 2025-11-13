@@ -47,3 +47,8 @@ A Docker Compose-based local environment for AI healthcare claims reconciliation
 - Environment variables configured (see `.env` example)
 
 ## Services Snapshot (Temporary)
+
+<img width="1919" height="1079" alt="2" src="https://github.com/user-attachments/assets/053b3005-4a3d-4fca-9bf4-6c6086d30666" />
+<img width="1919" height="1079" alt="1" src="https://github.com/user-attachments/assets/bf536db8-5c22-4a2b-b37b-464580724664" />
+<img width="1919" height="1079" alt="3" src="https://github.com/user-attachments/assets/934da283-48e1-4b87-a756-308f9d471027" />
+
