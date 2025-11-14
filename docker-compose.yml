@@ -578,6 +578,21 @@ services:
     networks:
       - tanzania-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "1337:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - tanzania-network
+
 volumes:
   n8n_data:
   n8n_postgres-data:
