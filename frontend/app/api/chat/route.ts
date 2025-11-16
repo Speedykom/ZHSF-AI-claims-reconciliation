@@ -1,13 +1,34 @@
-import { google } from "@ai-sdk/google";
-import { convertToModelMessages, streamText } from "ai";
+import { NextRequest } from 'next/server';
 
-export const maxDuration = 30;
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const message = body.messages?.[body.messages.length - 1]?.content;
 
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const result = streamText({
-    model: google("gemini-2.0-flash"),
-    messages: convertToModelMessages(messages),
-  });
-  return result.toUIMessageStreamResponse();
+    const response = await fetch("http://n8n:5678/webhook/v1/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        "user_id": "user_123",
+        "thread_id": "thread_49594",
+        "message": message,
+        "session_id": "session_567"
+      }),
+    });
+
+    const data = await response.json();
+
+    return Response.json(data, {
+      status: 200
+    });
+
+  } catch (error) {
+    return Response.json({
+      error: 'failed to process the request'
+    }, {
+      status: 500
+    })
+  }
 }
