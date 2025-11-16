@@ -1,10 +1,6 @@
 "use client";
 
-import { AssistantRuntimeProvider } from "@assistant-ui/react";
-import {
-  useChatRuntime,
-  AssistantChatTransport,
-} from "@assistant-ui/react-ai-sdk";
+import { AssistantRuntimeProvider, ChatModelAdapter, useLocalRuntime } from "@assistant-ui/react";
 import { Thread } from "@/components/assistant-ui/thread";
 import {
   SidebarInset,
@@ -14,21 +10,49 @@ import {
 import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
+  Breadcrumb
 } from "@/components/ui/breadcrumb";
 
-export const Assistant = () => {
-  const runtime = useChatRuntime({
-    transport: new AssistantChatTransport({
-      api: "/api/chat",
-    }),
-  });
+const ModelAdapter: ChatModelAdapter = {
+  async run({ messages, abortSignal }) {
+    try {
+      const formattedMessages = messages.map((m) => ({
+        role: m.role,
+        content: m.content
+          .filter((c) => c.type === "text")
+          .map((c) => c.text)
+          .join("\n"),
+      }));
 
+      const result = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: formattedMessages }),
+        signal: abortSignal,
+      });
+
+      const data = await result.json();
+      
+      const messageText = data[0]
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: messageText.output,
+          }
+        ]
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+};
+
+export const Assistant = () => {
+  const runtime = useLocalRuntime(ModelAdapter);
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <SidebarProvider>
