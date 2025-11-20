@@ -38,10 +38,13 @@ services:
     container_name: ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "11435:11434"
     volumes:
       - ollama_data:/root/.ollama
-    command: sh -c "ollama serve & sleep 5 && ollama pull embeddinggemma:300m && wait"
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - "ollama serve & sleep 5 && ollama pull embeddinggemma:300m && wait"
     networks:
       - tanzania-network
 
