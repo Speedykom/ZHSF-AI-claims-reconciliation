@@ -5,22 +5,30 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const message = body.messages?.[body.messages.length - 1]?.content;
 
-    const response = await fetch("http://n8n:5678/webhook/v1/chat", {
+    const response = await fetch("http://n8n:5678/webhook/claims-agent", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        "user_id": "user_123",
-        "thread_id": "thread_49594",
+        "session": "user1_session1",
         "message": message,
-        "session_id": "session_567"
       }),
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const responseText = await response.text();
+      return Response.json({
+        error: 'invalid response from webhook'
+      }, {
+        status: 502
+      });
+    }
 
-    return Response.json(data, {
+    return Response.json([data], {
       status: 200
     });
 
