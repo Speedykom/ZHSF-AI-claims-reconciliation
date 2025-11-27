@@ -594,6 +594,22 @@ services:
     networks:
       - tanzania-network
 
+  claims-rec-mcp:
+    build:
+      context: ./claims-rec-mcp
+      dockerfile: Dockerfile
+    container_name: claims-rec-mcp
+    ports:
+      - "7711:7711"
+    environment:
+      TEST_DB: ${TEST_DB}
+      TEST_DB_USER: ${TEST_DB_USER}
+      TEST_DB_PASSWORD: ${TEST_DB_PASSWORD}
+      TEST_DB_HOST: test-db
+      TEST_DB_PORT: 5432
+    networks:
+      - tanzania-network
+
 volumes:
   n8n_data:
   n8n_postgres-data:
