@@ -22,6 +22,32 @@ services:
     networks:
       - tanzania-network
 
+  docling:
+    image: ghcr.io/docling-project/docling-serve-cpu:v1.8.0
+    container_name: docling_model
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      DOCLING_SERVE_ENABLE_UI: true
+    networks:
+      - tanzania-network
+
+  ollama:
+    image: ollama/ollama:0.13.0
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    entrypoint: /bin/sh
+    command:
+      - "-c"
+      - "ollama serve & sleep 5 && ollama pull embeddinggemma:300m && wait"
+    networks:
+      - tanzania-network
+
   n8n:
     image: docker.n8n.io/n8nio/n8n:1.120.1
     restart: unless-stopped
@@ -616,6 +642,7 @@ volumes:
   supabase-db-config:
   qdrant_data:
   test_db_data:
+  ollama_data:
 
 networks:
   tanzania-network:
