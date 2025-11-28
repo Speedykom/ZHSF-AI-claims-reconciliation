@@ -1,24 +1,19 @@
 from fastmcp import FastMCP
 import json
-from db import execute_query, close_connection
-from functools import wraps
-from inspect import signature
+from db import execute_query, execute_update, close_connection
+from typing import Optional
 
 mcp = FastMCP("Claims Recommendation MCP")
 
+HIDDEN_ARGS = ["chatInput", "toolCallId"]
 
-@mcp.tool
+@mcp.tool(exclude_args=HIDDEN_ARGS)
 def list_recent_claims(limit: int = 5, chatInput: str = None, toolCallId: str = None) -> str:
     """
     List the most recent claims (1-5 claims).
     
     Args:
         limit: Number of recent claims to retrieve (1-5, default: 5)
-        chatInput: The original chat input (ignored)
-        toolCallId: The tool call ID (ignored)
-    
-    Returns:
-        JSON string with list of recent claims
     """
     if limit < 1 or limit > 5:
         return json.dumps({"error": "Limit must be between 1 and 5"})
@@ -63,18 +58,150 @@ def list_recent_claims(limit: int = 5, chatInput: str = None, toolCallId: str = 
         return json.dumps({"error": str(e)})
 
 
-@mcp.tool
+@mcp.tool(exclude_args=HIDDEN_ARGS)
+def list_old_pending_claims(limit: int = 10, days_old: int = 30, chatInput: str = None, toolCallId: str = None) -> str:
+    """
+    List old pending claims that have been in pending status for a specified number of days.
+    
+    Args:
+        limit: Number of claims to retrieve (1-50, default: 10)
+        days_old: Minimum number of days the claim has been pending (default: 30)
+    """
+    if limit < 1 or limit > 50:
+        return json.dumps({"error": "Limit must be between 1 and 50"})
+    
+    if days_old < 1:
+        return json.dumps({"error": "days_old must be at least 1"})
+    
+    query = f"""
+        SELECT 
+            claim_id,
+            claim_number,
+            patient_first_name,
+            patient_last_name,
+            service_date,
+            service_type,
+            submitted_amount,
+            claim_status,
+            received_date,
+            CURRENT_DATE - received_date as days_pending
+        FROM tanzania_claims
+        WHERE claim_status = 'Pending'
+        AND received_date <= CURRENT_DATE - INTERVAL '{days_old} days'
+        ORDER BY received_date ASC, claim_id ASC
+        LIMIT {limit}
+    """
+    
+    try:
+        results = execute_query(query)
+        claims = []
+        for row in results:
+            claims.append({
+                "claim_id": row[0],
+                "claim_number": row[1],
+                "patient_name": f"{row[2]} {row[3]}",
+                "service_date": str(row[4]),
+                "service_type": row[5],
+                "submitted_amount": float(row[6]),
+                "claim_status": row[7],
+                "received_date": str(row[8]),
+                "days_pending": row[9]
+            })
+        
+        return json.dumps({
+            "success": True,
+            "count": len(claims),
+            "filter": {
+                "status": "Pending",
+                "minimum_days_old": days_old
+            },
+            "claims": claims
+        }, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool(exclude_args=HIDDEN_ARGS)
+def list_claims_by_status(status: str, limit: int = 10, days_old: int = 0, chatInput: str = None, toolCallId: str = None) -> str:
+    """
+    List claims filtered by status (Approved, Rejected, or Pending), optionally older than specified days.
+    
+    Args:
+        status: Claim status to filter by ('Approved', 'Rejected', or 'Pending')
+        limit: Number of claims to retrieve (1-50, default: 10)
+        days_old: Minimum number of days old (0 for all claims, default: 0)
+    """
+    if limit < 1 or limit > 50:
+        return json.dumps({"error": "Limit must be between 1 and 50"})
+    
+    if status not in ['Approved', 'Rejected', 'Pending']:
+        return json.dumps({"error": "Status must be 'Approved', 'Rejected', or 'Pending'"})
+    
+    status = status.replace("'", "''")
+    
+    days_filter = ""
+    if days_old > 0:
+        days_filter = f"AND received_date <= CURRENT_DATE - INTERVAL '{days_old} days'"
+    
+    query = f"""
+        SELECT 
+            claim_id,
+            claim_number,
+            patient_first_name,
+            patient_last_name,
+            service_date,
+            service_type,
+            submitted_amount,
+            claim_status,
+            received_date,
+            processed_date,
+            payment_date,
+            CURRENT_DATE - received_date as days_since_received
+        FROM tanzania_claims
+        WHERE claim_status = '{status}'
+        {days_filter}
+        ORDER BY received_date ASC, claim_id ASC
+        LIMIT {limit}
+    """
+    
+    try:
+        results = execute_query(query)
+        claims = []
+        for row in results:
+            claims.append({
+                "claim_id": row[0],
+                "claim_number": row[1],
+                "patient_name": f"{row[2]} {row[3]}",
+                "service_date": str(row[4]),
+                "service_type": row[5],
+                "submitted_amount": float(row[6]),
+                "claim_status": row[7],
+                "received_date": str(row[8]),
+                "processed_date": str(row[9]) if row[9] else None,
+                "payment_date": str(row[10]) if row[10] else None,
+                "days_since_received": row[11]
+            })
+        
+        return json.dumps({
+            "success": True,
+            "count": len(claims),
+            "filter": {
+                "status": status,
+                "minimum_days_old": days_old if days_old > 0 else "all"
+            },
+            "claims": claims
+        }, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+@mcp.tool(exclude_args=HIDDEN_ARGS)
 def get_claim_by_number(claim_number: str, chatInput: str = None, toolCallId: str = None) -> str:
     """
     Get detailed information about a specific claim using claim number.
     
     Args:
         claim_number: Unique claim number (e.g., 'ZNB-2024-001')
-        chatInput: The original chat input (ignored)
-        toolCallId: The tool call ID (ignored)
-    
-    Returns:
-        JSON string with complete claim details
     """
     claim_number = claim_number.replace("'", "''")
     
@@ -194,20 +321,14 @@ def get_claim_by_number(claim_number: str, chatInput: str = None, toolCallId: st
         return json.dumps({"error": str(e)})
 
 
-@mcp.tool
+@mcp.tool(exclude_args=HIDDEN_ARGS)
 def get_claim_by_patient_id(patient_id: str, chatInput: str = None, toolCallId: str = None) -> str:
     """
     Get detailed information about claims for a specific patient using patient ID.
     
     Args:
         patient_id: Patient ID (e.g., 'PAT-001')
-        chatInput: The original chat input (ignored)
-        toolCallId: The tool call ID (ignored)
-    
-    Returns:
-        JSON string with complete claim details
     """
-    # prevent SQL injection
     patient_id = patient_id.replace("'", "''")
     
     query = f"""
@@ -327,18 +448,13 @@ def get_claim_by_patient_id(patient_id: str, chatInput: str = None, toolCallId: 
         return json.dumps({"error": str(e)})
 
 
-@mcp.tool
+@mcp.tool(exclude_args=HIDDEN_ARGS)
 def check_claim_status(claim_number: str, chatInput: str = None, toolCallId: str = None) -> str:
     """
     Check the current status of a claim (Approved, Rejected, or Pending).
     
     Args:
         claim_number: Unique claim number (e.g., 'ZNB-2024-001')
-        chatInput: The original chat input (ignored)
-        toolCallId: The tool call ID (ignored)
-    
-    Returns:
-        JSON string with claim status information
     """
     claim_number = claim_number.replace("'", "''")
     
@@ -395,7 +511,7 @@ def check_claim_status(claim_number: str, chatInput: str = None, toolCallId: str
         return json.dumps({"error": str(e)})
 
 
-@mcp.tool
+@mcp.tool(exclude_args=HIDDEN_ARGS)
 def approve_claim(claim_number: str, reviewed_by: str = "", notes: str = "", chatInput: str = None, toolCallId: str = None) -> str:
     """
     Approve a claim and update its status to 'Approved'.
@@ -404,16 +520,11 @@ def approve_claim(claim_number: str, reviewed_by: str = "", notes: str = "", cha
         claim_number: Unique claim number (e.g., 'ZNB-2024-001')
         reviewed_by: Name of the person reviewing the claim (optional)
         notes: Notes about the decision (optional)
-        chatInput: The original chat input (ignored)
-        toolCallId: The tool call ID (ignored)
-    
-    Returns:
-        JSON string with updated claim details
     """
     return _update_claim_status_internal(claim_number, "Approved", reviewed_by, notes)
 
 
-@mcp.tool
+@mcp.tool(exclude_args=HIDDEN_ARGS)
 def reject_claim(claim_number: str, reviewed_by: str = "", notes: str = "", chatInput: str = None, toolCallId: str = None) -> str:
     """
     Reject a claim and update its status to 'Rejected'.
@@ -422,11 +533,6 @@ def reject_claim(claim_number: str, reviewed_by: str = "", notes: str = "", chat
         claim_number: Unique claim number (e.g., 'ZNB-2024-001')
         reviewed_by: Name of the person reviewing the claim (optional)
         notes: Notes about the decision (optional)
-        chatInput: The original chat input (ignored)
-        toolCallId: The tool call ID (ignored)
-    
-    Returns:
-        JSON string with updated claim details
     """
     return _update_claim_status_internal(claim_number, "Rejected", reviewed_by, notes)
 
@@ -486,7 +592,13 @@ def _update_claim_status_internal(claim_number: str, new_status: str, reviewed_b
                 WHERE claim_number = '{claim_number}'
             """
         
-        execute_query(update_query)
+        rows_affected = execute_update(update_query)
+        
+        if rows_affected == 0:
+            return json.dumps({
+                "success": False,
+                "message": "Failed to update claim status"
+            })
         
         details_query = f"""
             SELECT 
@@ -507,6 +619,7 @@ def _update_claim_status_internal(claim_number: str, new_status: str, reviewed_b
             "success": True,
             "message": f"Claim {new_status.lower()} successfully",
             "previous_status": current_status,
+            "rows_updated": rows_affected,
             "updated_claim": {
                 "claim_id": row[0],
                 "claim_number": row[1],
