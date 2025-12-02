@@ -33,11 +33,41 @@ const ThreadListNew: FC = () => {
   );
 };
 
+const StaticThreadListItem: FC<{ title: string; isActive?: boolean }> = ({ title, isActive = false }) => {
+  return (
+    <div className={`aui-thread-list-item flex items-center gap-2 rounded-lg transition-all hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${isActive ? 'bg-muted' : ''}`}>
+      <div className="aui-thread-list-item-trigger flex-grow px-3 py-2 text-start">
+        <span className="aui-thread-list-item-title text-sm">{title}</span>
+      </div>
+      <TooltipIconButton
+        className="aui-thread-list-item-archive mr-3 ml-auto size-4 p-0 text-foreground hover:text-primary"
+        variant="ghost"
+        tooltip="Archive thread"
+      >
+        <ArchiveIcon />
+      </TooltipIconButton>
+    </div>
+  );
+};
+
 const ThreadListItems: FC = () => {
   const isLoading = useAssistantState(({ threads }) => threads.isLoading);
 
-  if (isLoading) {
+  const isTestMode = process.env.NODE_ENV === 'development';
+
+  if (isLoading && !isTestMode) {
     return <ThreadListSkeleton />;
+  }
+
+  if (isTestMode) {
+    return (
+      <>
+        <StaticThreadListItem title="Test Thread 1" isActive={true} />
+        <StaticThreadListItem title="Test Thread 2" />
+        <StaticThreadListItem title="Another Test Thread" />
+        <StaticThreadListItem title="Sample Conversation" />
+      </>
+    );
   }
 
   return <ThreadListPrimitive.Items components={{ ThreadListItem }} />;
