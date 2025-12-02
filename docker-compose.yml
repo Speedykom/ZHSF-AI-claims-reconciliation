@@ -22,16 +22,16 @@ services:
     networks:
       - tanzania-network
 
-  docling:
-    image: ghcr.io/docling-project/docling-serve-cpu:v1.8.0
-    container_name: docling_model
-    restart: unless-stopped
-    ports:
-      - "5001:5001"
-    environment:
-      DOCLING_SERVE_ENABLE_UI: true
-    networks:
-      - tanzania-network
+  # docling:
+  #   image: ghcr.io/docling-project/docling-serve-cpu:v1.8.0
+  #   container_name: docling_model
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5001:5001"
+  #   environment:
+  #     DOCLING_SERVE_ENABLE_UI: true
+  #   networks:
+  #     - tanzania-network
 
   ollama:
     image: ollama/ollama:0.13.0
@@ -70,6 +70,7 @@ services:
       NODE_ENV: production
     volumes:
       - n8n_data:/home/node/.n8n
+      - ./n8n:/home/external:rw
     depends_on:
       n8n-postgres:
         condition: service_healthy
@@ -602,6 +603,9 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_SUPABASE_URL=http://kong:8000
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
     networks:
       - tanzania-network
     
@@ -633,6 +637,16 @@ services:
       TEST_DB_PASSWORD: ${TEST_DB_PASSWORD}
       TEST_DB_HOST: test-db
       TEST_DB_PORT: 5432
+    networks:
+      - tanzania-network
+
+  paddleocr:
+    build:
+      context: ./paddleocr
+      dockerfile: Dockerfile
+    container_name: paddleocr
+    ports:
+      - "5002:5002"
     networks:
       - tanzania-network
 
