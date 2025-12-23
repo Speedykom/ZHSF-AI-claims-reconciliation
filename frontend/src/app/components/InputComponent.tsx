@@ -1,0 +1,81 @@
+import React, { RefObject } from 'react';
+import { FiArrowUp, FiPaperclip, FiX } from 'react-icons/fi';
+
+interface InputComponentProps {
+  uploadProgress: number | null;
+  uploadedFile: File | null;
+  handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  removeFile: () => void;
+  fileInputRef: RefObject<HTMLInputElement | null>;
+}
+
+const InputComponent: React.FC<InputComponentProps> = ({
+  uploadProgress,
+  uploadedFile,
+  handleFileSelect,
+  removeFile,
+  fileInputRef
+}) => {
+  return (
+    <div className="p-3 md:p-4 pb-4 md:pb-6">
+      <div className="max-w-3xl mx-auto">
+        {(uploadProgress !== null || uploadedFile) && (
+          <div className="mb-3 bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
+            <FiPaperclip className="w-4 h-4 text-gray-500" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-gray-700 truncate">{uploadedFile?.name || 'Uploading...'}</span>
+                <button onClick={removeFile} className="p-1 hover:bg-gray-200 rounded">
+                  <FiX className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              {uploadProgress !== null && uploadProgress < 100 && (
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div
+                    className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="relative group">
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <div className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-8 h-8 md:w-6 md:h-6 rounded-full bg-transparent md:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-100 md:hover:bg-gray-300 transition-colors"
+            >
+              <FiPaperclip className="w-5 h-5 md:w-4 md:h-4" />
+            </button>
+          </div>
+
+          <input
+            type="text"
+            placeholder="Message AI..."
+            className="w-full bg-white border border-gray-200 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] text-gray-700 rounded-2xl py-3 md:py-3.5 pl-10 md:pl-12 pr-12 outline-none focus:border-gray-300 focus:ring-0 text-sm md:text-[15px] placeholder-gray-400"
+          />
+
+          <div className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2">
+            <button className="w-8 h-8 rounded-lg bg-black hover:bg-gray-800 flex items-center justify-center transition-colors disabled:opacity-50">
+              <FiArrowUp className="text-white w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="text-center mt-3">
+          <p className="text-[10px] md:text-[11px] text-gray-400">AI can make mistakes. Please verify important information.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default InputComponent;
