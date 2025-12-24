@@ -18,11 +18,11 @@ const BrandingPanel = () => {
       variants={simpleFadeVariants}
     >
       <div className="z-10 relative">
-        <h1 className="text-white text-7xl xl:text-8xl font-extrabold tracking-tighter mb-6">
-          Minimal.
+        <h1 className="text-white text-6xl font-extrabold tracking-tighter mb-6">
+          ZANZIBAR HEALTH SERVICES FUND
         </h1>
         <p className="text-gray-400 text-lg xl:text-xl font-light tracking-wide">
-          Everything you need. Nothing you don't.
+          Qualilty Health For All
         </p>
       </div>
     </motion.div>
