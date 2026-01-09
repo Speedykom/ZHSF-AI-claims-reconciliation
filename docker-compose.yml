@@ -64,7 +64,7 @@ services:
       TZ: Europe/Berlin
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'true'
       N8N_RUNNERS_ENABLED: 'true'
-      N8N_HOST: localhost
+      N8N_HOST: 0.0.0.0
       N8N_PORT: 5678
       N8N_PROTOCOL: http
       NODE_ENV: production
@@ -639,6 +639,7 @@ services:
       TEST_DB_PORT: 5432
     networks:
       - tanzania-network
+    restart: unless-stopped
 
   paddleocr:
     build:
