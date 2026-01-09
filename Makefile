@@ -2,6 +2,7 @@
 
 start:
 	docker compose --env-file .env up -d
+	./n8n-init.sh
 
 stop:
 	docker compose down
