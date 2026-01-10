@@ -1,18 +1,61 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FiSidebar, FiPlus, FiSearch, FiMessageSquare,
-  FiSettings
+  FiSettings, FiInbox
 } from 'react-icons/fi';
 import { BsPinAngleFill, BsRobot } from 'react-icons/bs';
 import Image from 'next/image';
+import { Thread } from '../types';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   isMobile: boolean;
+  selectedThreadId: string | null;
+  onThreadSelect: (threadId: string) => void;
+  onNewChat: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMobile }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMobile, selectedThreadId, onThreadSelect, onNewChat }) => {
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchThreads = async () => {
+      try {
+        const response = await fetch('/api/threads');
+        if (response.ok) {
+          const data = await response.json();
+          const threadsArray = Array.isArray(data) ? data : [data];
+          setThreads(threadsArray);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchThreads();
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery) {
+      setSearchLoading(true);
+      const timer = setTimeout(() => {
+        setSearchLoading(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    } else {
+      setSearchLoading(false);
+    }
+  }, [searchQuery]);
+
+  const filteredThreads = threads.filter(thread =>
+    thread.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   return (
     <aside
       className={`
@@ -44,7 +87,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
       <div className="flex flex-col flex-1 w-[260px] overflow-hidden">
 
         <div className="px-3 py-2">
-          <button className="w-full flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-2.5 rounded-lg shadow-sm transition-all text-sm font-medium">
+          <button
+            onClick={onNewChat}
+            className="w-full flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-2.5 rounded-lg shadow-sm transition-all text-sm font-medium"
+          >
             <FiPlus className="w-4 h-4 text-gray-400" />
             New Chat
           </button>
@@ -56,6 +102,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
             <input
               type="text"
               placeholder="Search history..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#EDEDF0] text-sm py-2 pl-9 pr-8 rounded-lg outline-none focus:ring-1 focus:ring-gray-300 placeholder-gray-500"
             />
           </div>
@@ -74,15 +122,50 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
           <div>
             <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">Chat History</h3>
 
-            <div className="relative flex items-center gap-3 px-2 py-2 rounded-lg bg-white shadow-sm border border-gray-100 cursor-pointer text-sm text-gray-900 group mb-1">
-              <FiMessageSquare className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              <span className="truncate flex-1 font-medium">test converstation</span>
-            </div>
-
-            <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#EDEDF0] cursor-pointer text-sm text-gray-600">
-              <FiMessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="truncate">test second conversation</span>
-            </div>
+            {loading || searchLoading ? (
+              <>
+                <div className="flex items-center gap-3 px-2 py-2 mb-1">
+                  <div className="w-4 h-4 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
+                  <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="flex items-center gap-3 px-2 py-2 mb-1">
+                  <div className="w-4 h-4 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
+                  <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="flex items-center gap-3 px-2 py-2">
+                  <div className="w-4 h-4 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
+                  <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </>
+            ) : (
+              <>
+                {filteredThreads.length > 0 ? (
+                  filteredThreads.map((thread) => (
+                    <div
+                      key={thread.thread_id}
+                      onClick={() => onThreadSelect(thread.thread_id)}
+                      className={`flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer text-sm mb-1 transition-colors ${
+                        selectedThreadId === thread.thread_id
+                          ? 'bg-white shadow-sm border border-gray-100 text-gray-900 font-medium'
+                          : 'hover:bg-[#EDEDF0] text-gray-600'
+                      }`}
+                    >
+                      <FiMessageSquare
+                        className={`w-4 h-4 flex-shrink-0 ${
+                          selectedThreadId === thread.thread_id ? 'text-blue-500' : 'text-gray-400'
+                        }`}
+                      />
+                      <span className="truncate flex-1">{thread.title}</span>
+                    </div>
+                  ))
+                ) : searchQuery ? (
+                  <div className="flex items-center gap-3 px-2 py-4 text-gray-500 text-sm">
+                    <FiInbox className="w-4 h-4 flex-shrink-0" />
+                    <span>No chats found</span>
+                  </div>
+                ) : null}
+              </>
+            )}
           </div>
 
         </div>
