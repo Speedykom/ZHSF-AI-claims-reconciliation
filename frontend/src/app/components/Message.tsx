@@ -29,16 +29,6 @@ const Message: React.FC<MessageProps> = ({ type, content, onCopy }) => {
             <MarkdownRenderer content={content} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-            {onCopy && (
-              <button
-                onClick={onCopy}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
-              >
-                <FiCopy className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-              </button>
-            )}
-          </div>
       </div>
     );
   }
@@ -49,7 +39,15 @@ const Message: React.FC<MessageProps> = ({ type, content, onCopy }) => {
         <FiUser className="text-gray-500 text-base" />
       </div>
 
-      <div className="flex flex-col items-end max-w-[85%] md:max-w-[80%]">
+      <div className="flex flex-col items-end max-w-[85%] md:max-w-[80%] relative">
+        {onCopy && (
+          <button
+            onClick={onCopy}
+            className="absolute -top-2 -left-8 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+          >
+            <FiCopy className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+          </button>
+        )}
         <div className="bg-[#F3F4F6] text-gray-800 px-4 py-3 rounded-2xl rounded-tr-sm text-[15px] leading-relaxed">
           <MarkdownRenderer content={content} />
         </div>
