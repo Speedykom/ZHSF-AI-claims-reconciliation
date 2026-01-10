@@ -4,6 +4,8 @@ import { FiSidebar, FiShare, FiInfo, FiArrowDown } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
 import Message from './components/Message';
 import InputComponent from './components/InputComponent';
+import NewChatWelcome from './components/NewChatWelcome';
+import { Message as MessageType } from './types';
 
 const AIChatInterface = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -11,6 +13,10 @@ const AIChatInterface = () => {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MessageType[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [isNewChatMode, setIsNewChatMode] = useState(false);
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +50,32 @@ const AIChatInterface = () => {
     chatArea.addEventListener('scroll', handleScroll);
     return () => chatArea.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedThreadId) {
+        setMessages([]);
+        return;
+      }
+
+      setLoadingMessages(true);
+      try {
+        const response = await fetch(`/api/messages?thread_id=${encodeURIComponent(selectedThreadId)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(data);
+        } else {
+          setMessages([]);
+        }
+      } catch (error) {
+        setMessages([]);
+      } finally {
+        setLoadingMessages(false);
+      }
+    };
+
+    fetchMessages();
+  }, [selectedThreadId]);
 
   const scrollToBottom = () => {
     chatAreaRef.current?.scrollTo({ top: chatAreaRef.current.scrollHeight, behavior: 'smooth' });
@@ -93,6 +125,15 @@ const AIChatInterface = () => {
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         isMobile={isMobile}
+        selectedThreadId={selectedThreadId}
+        onThreadSelect={(threadId) => {
+          setSelectedThreadId(threadId);
+          setIsNewChatMode(false);
+        }}
+        onNewChat={() => {
+          setSelectedThreadId(null);
+          setIsNewChatMode(true);
+        }}
       />
 
       <main className="flex-1 flex flex-col min-w-0 bg-white relative z-0">
@@ -117,53 +158,66 @@ const AIChatInterface = () => {
 
         <div ref={chatAreaRef} className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-200">
           <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 pb-4">
-
-            <Message
-              type="ai"
-              content={`Here is a breakdown of how you might structure the React Sidebar component to handle state persistence and animations.
-
-## Features Supported
-
-- **Bold text** and *italic text*
-- \`inline code\` examples
-- Code blocks with syntax highlighting:
-
-\`\`\`javascript
-const SidebarContext = createContext();
-const useSidebar = () => useContext(SidebarContext);
-\`\`\`
-
-### Lists
-- Ordered lists
-- Unordered lists
-- Nested lists
-
-### Tables
-| Feature | Status |
-|---------|--------|
-| Bold | ✅ |
-| Italic | ✅ |
-| Code | ✅ |
-
-> This is a blockquote with **markdown** support.
-
-Horizontal rule below:
-
----
-
-[Link example](https://example.com)`}
-              onCopy={() => handleCopy("Code example...")}
-            />
-
-            <Message
-              type="user"
-              content="That looks good. How do I make sure it remembers the state when I refresh the page?"
-            />
-
-            <Message
-              type="ai"
-              content="To persist the state, you can use `localStorage` inside a `useEffect` hook within your provider."
-            />
+            {isNewChatMode ? (
+              <NewChatWelcome />
+            ) : !selectedThreadId ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="text-center">
+                  <p className="text-lg mb-2">Select a conversation from the sidebar</p>
+                  <p className="text-sm">Choose a thread to view messages</p>
+                </div>
+              </div>
+            ) : loadingMessages ? (
+              <>
+                <div className="flex gap-4 group">
+                  <div className="flex-1 space-y-4 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-4 flex-row-reverse group">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse flex-shrink-0 mt-1"></div>
+                  <div className="flex flex-col items-end max-w-[85%] md:max-w-[80%]">
+                    <div className="bg-gray-200 text-gray-800 px-4 py-3 rounded-2xl rounded-tr-sm animate-pulse">
+                      <div className="h-4 bg-gray-300 rounded w-32"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-4 group">
+                  <div className="flex-1 space-y-4 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="text-center">
+                  <p className="text-lg mb-2">No messages yet</p>
+                  <p className="text-sm">Start a conversation to see messages here</p>
+                </div>
+              </div>
+            ) : (
+              messages.map((message, index) => (
+                <Message
+                  key={index}
+                  type={message.role === 'assistant' ? 'ai' : 'user'}
+                  content={message.content}
+                  onCopy={() => handleCopy(message.content)}
+                />
+              ))
+            )}
           </div>
         </div>
 
