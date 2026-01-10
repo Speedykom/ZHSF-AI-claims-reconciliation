@@ -1,57 +1,503 @@
 {
-  "name": "RAG-OCR-workflow",
+  "name": "RAG-MCP Claims Reconciliation",
   "nodes": [
     {
       "parameters": {
-        "url": "=http://kong:8000/storage/v1/object/Claims/{{ $json.name }}",
-        "sendHeaders": true,
-        "specifyHeaders": "json",
-        "jsonHeaders": "{\n  \"Authorization\": \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NjM0MjA0MDAsImV4cCI6MTkyMTE4NjgwMH0.r2y3orodv9Q7iPxpQDgz6sbeKw0BQE3j3PCbcnA1DoM\",\n  \"apikey\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NjM0MjA0MDAsImV4cCI6MTkyMTE4NjgwMH0.r2y3orodv9Q7iPxpQDgz6sbeKw0BQE3j3PCbcnA1DoM\",\n  \"Content-Type\": \"application/json\"\n}",
+        "httpMethod": "POST",
+        "path": "claims-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        2512
+      ],
+      "id": "475e4f5c-3eb3-4ecb-b8ee-eb82ea8dbd60",
+      "name": "Webhook",
+      "webhookId": "98d38ad8-97c3-40ca-84c3-499de69d8fee"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        832,
+        2512
+      ],
+      "id": "3fe35d20-e69e-4b89-ade0-0fe81a2fb281",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
         "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file",
-              "outputPropertyName": "={{ $json.name }}"
-            }
-          }
+          "temperature": 0
         }
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
       "position": [
-        416,
-        -288
+        208,
+        2768
       ],
-      "id": "6b95ec88-3e9c-4657-854d-cebca797573c",
-      "name": "Download Claim"
+      "id": "717de2c0-c143-4eda-a7ae-0b30954b8e14",
+      "name": "GPT OSS 20B",
+      "credentials": {
+        "groqApi": {
+          "id": "pAwckXPf9euftlt9",
+          "name": "Groq account"
+        }
+      }
     },
     {
       "parameters": {
-        "amount": 1
+        "endpointUrl": "http://claims-rec-mcp:7711/mcp",
+        "options": {
+          "timeout": 60000
+        }
       },
-      "type": "n8n-nodes-base.wait",
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        2768
+      ],
+      "id": "52948f69-cc37-4f7d-9e51-1638ab5a8f5e",
+      "name": "Claims Rec – MCP Client"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "57fdae2a-3297-4fe5-a548-39c3c1544d80",
+              "name": "chatInput",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        2512
+      ],
+      "id": "9aa8a790-ef7d-4b4b-ae90-8f24b7e56299",
+      "name": "Clean up Payload"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "You are a helpful and friendly assistant working for the Zanzibar Health Services Fund (ZHSF).\nYour role is to support staff by helping them quickly check claim details, claim status, recent claims, patient claims, and by assisting in approving or rejecting claims using the available tools.\nAlways explain things simply, avoid technical language, and guide users gently.\nIf a tool can answer their request, call it.\nBe polite, supportive, and make the workflow easy for the user."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        304,
+        2512
+      ],
+      "id": "ba4b7f46-9489-407c-aebf-28b44f7d405a",
+      "name": "AI Agent - Claims Rec"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/external/medical-rules.xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        1920
+      ],
+      "id": "19da0d96-abf9-4af1-83a6-e0f81ffa40c8",
+      "name": "Pull Rules Engine Excel file"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        1920
+      ],
+      "id": "3416a46d-e5de-4059-957f-f12716653780",
+      "name": "RUN !"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        1216,
-        -208
+        64,
+        1920
       ],
-      "id": "37507426-1ba5-4376-a399-c6170b61a9ed",
-      "name": "Wait 1 sec",
-      "webhookId": "3b13a3f7-4a7a-4236-932b-a0b78bd381ff"
+      "id": "047e9e6d-2f26-405a-aee3-415812c8bfb8",
+      "name": "Convert excel to JSON"
     },
     {
       "parameters": {
-        "url": "=http://docling:5001/v1/result/{{ $json.task_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        512,
+        1920
+      ],
+      "id": "37261219-428b-41e5-8699-81954cddde9e",
+      "name": "Loop Over Rules"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4e86f57d-755a-4de7-92d7-13ec1d4d01fe",
+              "name": "combinedContent",
+              "value": "={{ $json.combinedContent }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        1936
+      ],
+      "id": "ecb874c4-c952-4660-a99b-36a642fbab5a",
+      "name": "Get one Organized Readable Rule"
+    },
+    {
+      "parameters": {
+        "jsCode": "const myJSON = JSON.stringify($input.first().json.combinedContent);\nconst dataz = {\"data\": myJSON};\nreturn dataz;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        1936
+      ],
+      "id": "eda0f892-1806-4aa4-a690-a2b6fd76a950",
+      "name": "Convert to Natural Language Rule"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rules-engine",
+          "mode": "list"
+        },
+        "embeddingBatchSize": 1,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1152,
+        1936
+      ],
+      "id": "85ebdd6f-0bef-4c03-8a7c-ea32ec7667e7",
+      "name": "Rules-Engine Vectorstore",
+      "credentials": {
+        "qdrantApi": {
+          "id": "9g9FVeOFvcZvztrb",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        2144
+      ],
+      "id": "ff0d2f84-62aa-4d9c-8452-34e6c64b5176",
+      "name": "Load Natural Language Rule"
+    },
+    {
+      "parameters": {
+        "chunkSize": 500000
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        2288
+      ],
+      "id": "c70ef6f9-ce9a-4cc2-b15b-bb8802f2fc04",
+      "name": "Biggest Token Chunk Size"
+    },
+    {
+      "parameters": {
+        "command": "echo \"done\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        736,
+        1728
+      ],
+      "id": "ebea619d-76ec-416c-967b-c5659f1de34d",
+      "name": "ECHO DONE. IN N8N BASH"
+    },
+    {
+      "parameters": {
+        "model": "embeddinggemma:300m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        2288
+      ],
+      "id": "7131fc6c-c31d-4f68-bfe4-06eb138c9469",
+      "name": "embeddinggemma:300m (2)",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Ioik0GQDygB82fN6",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://paddleocr:5002/process",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"image\":  \"{{ $json.data }}\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1216,
-        -400
+        -960,
+        -336
       ],
-      "id": "14ae70e0-41f7-4d0e-8067-9452449dff02",
-      "name": "Extract Markdown from Document"
+      "id": "f49c458f-d2c5-4952-b599-46be27be8949",
+      "name": "Extract Claim Info with Paddle OCR"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -1168,
+        -336
+      ],
+      "id": "e9a5ab20-ff2c-4494-9e22-4f71ab48d68f",
+      "name": "Convert image to BASE64"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Match this structured claim to the best rules engine by values, fields and types.\n\n",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rules-engine",
+          "mode": "list",
+          "cachedResultName": "rules-engine"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        -64
+      ],
+      "id": "02922297-4ec5-4ed4-ac0f-b0d789ed15f3",
+      "name": "Retrieve Compatible Rules",
+      "credentials": {
+        "qdrantApi": {
+          "id": "9g9FVeOFvcZvztrb",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook1').item.json.body.message }}\n\n```markdown\n{{ $json.markdown[0] }}\n```",
+        "options": {
+          "systemMessage": "You are an intelligent claims verification assistant. Your task is to evaluate whether the provided insurance claim information aligns with the relevant rules and guidelines. Analyze the claim carefully, identify any discrepancies or conflicts, and clearly indicate whether the claim is compliant or requires further review. Provide concise explanations and actionable insights to help the user make informed decisions. Focus on accuracy, clarity, and practical guidance. Always use the Qdrant document retriever to access relevant documents, guidelines, and reference materials before providing an assessment."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -368,
+        -336
+      ],
+      "id": "e51077a5-4235-4a41-b09a-79f56db8389a",
+      "name": "Rules Engine AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "embeddinggemma:300m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        80
+      ],
+      "id": "d8fe6236-c640-41f7-8082-0d37ee918d5c",
+      "name": "embeddinggemma:300m (1)",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Ioik0GQDygB82fN6",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  const data = item.json;\n  \n  const denseText = [\n    `Surgical Procedure: ${data['Surgical Procedure'] || 'N/A'}.`,\n    data['Major/Minor'] ? `Classification: ${data['Major/Minor']} procedure.` : '',\n    data['M/F'] && data['M/F'] !== 'ALL' ? `Gender: ${data['M/F']}.` : 'Applicable to all genders.',\n    data['Age'] && data['Age'] !== 'ALL' ? `Age requirement: ${data['Age']}.` : 'No age restriction.',\n    data['Prior Authorization'] === 'YES' ? 'Prior authorization is required.' : \n    data['Prior Authorization'] === 'NO' ? 'No prior authorization needed.' : '',\n    data['Hospitalization days'] && data['Hospitalization days'] !== 'NO' && data['Hospitalization days'] !== 'NULL' ? \n      `Requires ${data['Hospitalization days']} days of hospitalization.` : \n    data['Hospitalization days'] === 'YES' ? 'Hospitalization is required.' :\n    data['Hospitalization days'] === 'NO' ? 'No hospitalization required.' : '',\n    data['Additional Days Approved'] && data['Additional Days Approved'] !== 'NO' && data['Additional Days Approved'] !== 'NULL' ? \n      `${data['Additional Days Approved']} additional days approved.` : '',\n    data['Hospital level'] ? `Available at: ${data['Hospital level']}.` : '',\n    data['Registered Specialized'] ? `Performed by: ${data['Registered Specialized']}.` : ''\n  ].filter(text => text).join(' ');\n  \n  const sparseKeywords = [\n    data['Surgical Procedure'],\n    data['Major/Minor'],\n    data['M/F'],\n    data['Age'],\n    data['Prior Authorization'] === 'YES' ? 'authorization required' : 'no authorization',\n    data['Hospitalization days'] === 'YES' || (data['Hospitalization days'] && data['Hospitalization days'] !== 'NO' && data['Hospitalization days'] !== 'NULL') ? 'hospitalization inpatient' : 'outpatient',\n    data['Hospital level'] ? data['Hospital level'].split('/').join(' ') : '',\n    data['Registered Specialized'] ? data['Registered Specialized'].split('/').join(' ') : '',\n    'dental surgery procedure medical treatment'\n  ].filter(kw => kw && kw !== 'NULL' && kw !== 'ALL').join(' ');\n  \n  item.json.denseContent = denseText;\n  item.json.sparseContent = sparseKeywords;\n  item.json.combinedContent = `${denseText} ${sparseKeywords}`;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        1920
+      ],
+      "id": "90cc9daf-b38f-41e4-bc26-90382cbc0497",
+      "name": "Create Dense+Sparse Content from JSON objects"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "RAG",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2096,
+        304
+      ],
+      "id": "76bf154e-5fdb-4e38-874d-3d7c82ce3822",
+      "name": "Webhook1",
+      "webhookId": "f2d8ded8-2dbf-46ec-8784-563666528841"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        -64
+      ],
+      "id": "e3ef869a-fade-4f78-a917-24e5ee2bf831",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "pAwckXPf9euftlt9",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook1').item.json.body.user }}_{{ $('Webhook1').item.json.body.thread }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        -64
+      ],
+      "id": "e5de2c25-1b30-41e4-80e5-242abc9c3297",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You may receive content that includes Markdown or HTML.\n\n**Task:**\n- Convert and respond **only** in clear, human-readable **Markdown**\n- Do **not** include any HTML in your response\n- Preserve the original meaning, structure, and emphasis\n- Improve readability where appropriate\n\n**Content to process:**\n{{ $json.markdown[0] }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -752,
+        -336
+      ],
+      "id": "af570c7c-60ce-4e4c-9317-eac54cfea0a4",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -752,
+        -128
+      ],
+      "id": "b85d18d8-8d33-4468-ad16-ad96dffecf60",
+      "name": "Groq Chat Model2",
+      "credentials": {
+        "groqApi": {
+          "id": "pAwckXPf9euftlt9",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookData = $('Webhook1').first().json.body || $('Webhook1').first().json;\n\n// Generate thread_id if not provided or invalid\nconst threadId = webhookData.thread_id && \n                 webhookData.thread_id !== '' && \n                 webhookData.thread_id !== 'null' && \n                 webhookData.thread_id !== null\n                 ? webhookData.thread_id\n                 : `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n\n// Check if this is a new thread\nconst isNewThread = !webhookData.thread_id || \n                    webhookData.thread_id === '' || \n                    webhookData.thread_id === 'null' || \n                    webhookData.thread_id === null;\n\n// Check if file is attached (backend sets this param)\nconst hasFile = webhookData.has_file === true || webhookData.has_file === 'true';\n\nreturn {\n  json: {\n    thread_id: threadId,\n    is_new_thread: isNewThread,\n    has_file: hasFile,\n    user_message: webhookData.message || '',\n    // Pass through the entire webhook data for access to file data if needed\n    webhook_data: webhookData\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        304
+      ],
+      "id": "bfa61b69-772f-4c3f-9e88-dca9e4ca695d",
+      "name": "Code in JavaScript"
     },
     {
       "parameters": {
@@ -64,12 +510,13 @@
           },
           "conditions": [
             {
-              "id": "40435399-105d-4cd3-85d6-43ae20b4a780",
-              "leftValue": "={{ $json.task_status }}",
-              "rightValue": "success",
+              "id": "096b5129-dc97-4da5-8f53-666cbc148e9a",
+              "leftValue": "={{ $json.is_new_thread }}",
+              "rightValue": "",
               "operator": {
-                "type": "string",
-                "operation": "equals"
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
               }
             }
           ],
@@ -80,34 +527,223 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        992,
-        -288
+        -1200,
+        320
       ],
-      "id": "b0b17c3d-d25e-4e0f-982f-1bdc47e997ff",
-      "name": "If parsing still on"
+      "id": "50de6850-fc1b-42c1-a4cb-d8c84d07d198",
+      "name": "IF: is new thread ?"
     },
     {
       "parameters": {
-        "url": "=http://docling:5001/v1/status/poll/{{ $json.task_id }}",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
+        "operation": "executeQuery",
+        "query": "-- Create threads table\nCREATE TABLE IF NOT EXISTS threads (\n    thread_id VARCHAR(100) PRIMARY KEY,\n    title VARCHAR(255),\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- Create messages table\nCREATE TABLE IF NOT EXISTS messages (\n    message_id SERIAL PRIMARY KEY,\n    thread_id VARCHAR(100) NOT NULL,\n    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),\n    content TEXT NOT NULL,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE\n);\n\n-- Create indexes for better performance\nCREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id);\nCREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);\nCREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1904,
+        304
+      ],
+      "id": "3f57a525-b25e-4660-aa66-3a12a4b4fc0e",
+      "name": "Thread/Message Schema",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -944,
+        176
+      ],
+      "id": "007b2f82-da8c-4937-aef3-0d64b669035a",
+      "name": "SQL: Create New Thread/ User Message",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
             {
-              "name": "wait",
-              "value": "60"
+              "id": "7b84c0e8-9e9f-402f-a619-595116fea7e7",
+              "leftValue": "={{ $json.has_file }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1488,
+        304
+      ],
+      "id": "0c6df55b-1c05-44d5-b8eb-e20342fd37c6",
+      "name": "IF: has a file ?"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "claims-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        1024,
+        -624
+      ],
+      "id": "b93f6b84-2858-48e1-9c04-80187f898289",
+      "name": "Webhook2",
+      "webhookId": "98d38ad8-97c3-40ca-84c3-499de69d8fee"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2160,
+        -624
+      ],
+      "id": "8bdbeb1c-6d65-4a16-9104-b6d61ce4a837",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        -368
+      ],
+      "id": "679837d6-674b-4b1a-929d-dd6498851c35",
+      "name": "GPT OSS 20B1",
+      "credentials": {
+        "groqApi": {
+          "id": "pAwckXPf9euftlt9",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://claims-rec-mcp:7711/mcp",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        1920,
+        -368
+      ],
+      "id": "0eb134e8-5629-4325-8d17-e703896e5ab4",
+      "name": "Claims Rec – MCP Client1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "57fdae2a-3297-4fe5-a548-39c3c1544d80",
+              "name": "chatInput",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        768,
-        -288
+        1328,
+        -624
       ],
-      "id": "35c5ead6-ed41-42d0-a827-a576f3d0b4f1",
-      "name": "Check the status of the Docling/OCR process"
+      "id": "77dc3905-f2b3-4120-a846-ffbaf6c63575",
+      "name": "Clean up Payload1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "You are a helpful and friendly assistant working for the Zanzibar Health Services Fund (ZHSF).\nYour role is to support staff by helping them quickly check claim details, claim status, recent claims, patient claims, and by assisting in approving or rejecting claims using the available tools.\nAlways explain things simply, avoid technical language, and guide users gently.\nIf a tool can answer their request, call it.\nBe polite, supportive, and make the workflow easy for the user."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1632,
+        -624
+      ],
+      "id": "1abf192b-8344-44d8-bf01-909ece940418",
+      "name": "AI Agent - Claims Rec1"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/external/medical-rules.xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -1216
+      ],
+      "id": "99866690-332d-448e-98de-9d3a149bfa09",
+      "name": "Pull Rules Engine Excel file1"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1392,
+        -1216
+      ],
+      "id": "a86bb680-ee94-4a49-a514-c1f42db366ec",
+      "name": "Convert excel to JSON1"
     },
     {
       "parameters": {
@@ -116,96 +752,100 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        192,
-        -160
+        1840,
+        -1216
       ],
-      "id": "d6a126a3-f0ab-46a4-a98b-a66a46b29355",
-      "name": "Loop Over Claims"
+      "id": "d9668f71-a389-4c56-b094-f5ab90c11971",
+      "name": "Loop Over Rules1"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "http://kong:8000/storage/v1/object/list/Claims",
-        "sendHeaders": true,
-        "specifyHeaders": "json",
-        "jsonHeaders": "{\n  \"Authorization\": \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NjM0MjA0MDAsImV4cCI6MTkyMTE4NjgwMH0.r2y3orodv9Q7iPxpQDgz6sbeKw0BQE3j3PCbcnA1DoM\",\n  \"apikey\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3NjM0MjA0MDAsImV4cCI6MTkyMTE4NjgwMH0.r2y3orodv9Q7iPxpQDgz6sbeKw0BQE3j3PCbcnA1DoM\",\n  \"Content-Type\": \"application/json\"\n}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\n  \"prefix\": \"\"\n}",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4e86f57d-755a-4de7-92d7-13ec1d4d01fe",
+              "name": "combinedContent",
+              "value": "={{ $json.combinedContent }}",
+              "type": "string"
+            }
+          ]
+        },
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        -32,
-        -272
+        2064,
+        -1200
       ],
-      "id": "daa5d8e6-ac8e-410a-889d-c635044a14c8",
-      "name": "Fetch All Claims Metadata from Storage"
+      "id": "3141b70f-19c6-4376-9b63-e3f29b83a262",
+      "name": "Get one Organized Readable Rule1"
     },
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {}
-          ]
+        "jsCode": "const myJSON = JSON.stringify($input.first().json.combinedContent);\nconst dataz = {\"data\": myJSON};\nreturn dataz;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        -1200
+      ],
+      "id": "e541aab5-d4a1-402f-b31b-6668237f729e",
+      "name": "Convert to Natural Language Rule1"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rules-engine",
+          "mode": "list"
+        },
+        "embeddingBatchSize": 1,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        2480,
+        -1200
+      ],
+      "id": "e8a070db-4917-482c-ae28-2077001d705c",
+      "name": "Rules-Engine Vectorstore1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "9g9FVeOFvcZvztrb",
+          "name": "QdrantApi account"
         }
-      },
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [
-        -224,
-        -272
-      ],
-      "id": "5aee8a44-ac03-45a2-bb2f-1efe749cef98",
-      "name": "Schedule for Every Midnight"
+      }
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "http://docling:5001/v1/convert/file/async",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Api-Key",
-              "value": "your_api_key_here"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "multipart-form-data",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "to_formats",
-              "value": "md"
-            },
-            {
-              "name": "target_type",
-              "value": "inbody"
-            },
-            {
-              "parameterType": "formBinaryData",
-              "name": "files",
-              "inputDataFieldName": "={{ $json.name }}"
-            },
-            {
-              "name": "image_export_mode",
-              "value": "placeholder"
-            }
-          ]
-        },
+        "textSplittingMode": "custom",
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
       "position": [
-        576,
-        -288
+        2624,
+        -992
       ],
-      "id": "d7fb8670-4704-4940-b6f1-150afbd9a65a",
-      "name": "Local Docling OCR Preprocess"
+      "id": "b2b5b950-5816-4cbf-84ce-f3e33fda999d",
+      "name": "Load Natural Language Rule1"
+    },
+    {
+      "parameters": {
+        "chunkSize": 500000
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "typeVersion": 1,
+      "position": [
+        2704,
+        -848
+      ],
+      "id": "7250be35-f805-4da7-b0e9-4316bc7d2772",
+      "name": "Biggest Token Chunk Size1"
     },
     {
       "parameters": {
@@ -214,53 +854,11 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        320,
-        -464
+        2064,
+        -1408
       ],
-      "id": "8c1289eb-9191-45ba-b941-0ab91eaa148f",
-      "name": "Echo done"
-    },
-    {
-      "parameters": {
-        "mode": "insert",
-        "qdrantCollection": {
-          "__rl": true,
-          "value": "claims-embeddings",
-          "mode": "list"
-        },
-        "embeddingBatchSize": 2000,
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
-      "typeVersion": 1.3,
-      "position": [
-        1520,
-        -160
-      ],
-      "id": "1862d8b1-9e2d-4271-a314-c521785e8a2a",
-      "name": "Qdrant Vector Store",
-      "credentials": {
-        "qdrantApi": {
-          "id": "FZ06UNvvRhPsC4em",
-          "name": "QdrantApi account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsonMode": "expressionData",
-        "jsonData": "={{ $json }}",
-        "textSplittingMode": "custom",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
-      "typeVersion": 1.1,
-      "position": [
-        1632,
-        48
-      ],
-      "id": "557bdf49-5601-4541-9313-06f4036591a1",
-      "name": "Default Data Loader"
+      "id": "3c6aea64-5839-4f1a-af7c-6472e19f8289",
+      "name": "ECHO DONE. IN N8N BASH1"
     },
     {
       "parameters": {
@@ -269,186 +867,960 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        1504,
-        48
+        2432,
+        -848
       ],
-      "id": "024b4095-a781-4cdb-a4c0-8f7797a277ac",
-      "name": "Local Embeddings Model",
+      "id": "19be6bef-1f09-4da4-ae07-62d957c87b8f",
+      "name": "embeddinggemma:300m (2)1",
       "credentials": {
         "ollamaApi": {
-          "id": "uJarTXI2rLAJfqqz",
+          "id": "Ioik0GQDygB82fN6",
           "name": "Ollama account"
         }
       }
     },
     {
       "parameters": {
-        "chunkSize": 20000,
-        "chunkOverlap": 1
+        "jsCode": "for (const item of $input.all()) {\n  const data = item.json;\n  \n  const denseText = [\n    `Surgical Procedure: ${data['Surgical Procedure'] || 'N/A'}.`,\n    data['Major/Minor'] ? `Classification: ${data['Major/Minor']} procedure.` : '',\n    data['M/F'] && data['M/F'] !== 'ALL' ? `Gender: ${data['M/F']}.` : 'Applicable to all genders.',\n    data['Age'] && data['Age'] !== 'ALL' ? `Age requirement: ${data['Age']}.` : 'No age restriction.',\n    data['Prior Authorization'] === 'YES' ? 'Prior authorization is required.' : \n    data['Prior Authorization'] === 'NO' ? 'No prior authorization needed.' : '',\n    data['Hospitalization days'] && data['Hospitalization days'] !== 'NO' && data['Hospitalization days'] !== 'NULL' ? \n      `Requires ${data['Hospitalization days']} days of hospitalization.` : \n    data['Hospitalization days'] === 'YES' ? 'Hospitalization is required.' :\n    data['Hospitalization days'] === 'NO' ? 'No hospitalization required.' : '',\n    data['Additional Days Approved'] && data['Additional Days Approved'] !== 'NO' && data['Additional Days Approved'] !== 'NULL' ? \n      `${data['Additional Days Approved']} additional days approved.` : '',\n    data['Hospital level'] ? `Available at: ${data['Hospital level']}.` : '',\n    data['Registered Specialized'] ? `Performed by: ${data['Registered Specialized']}.` : ''\n  ].filter(text => text).join(' ');\n  \n  const sparseKeywords = [\n    data['Surgical Procedure'],\n    data['Major/Minor'],\n    data['M/F'],\n    data['Age'],\n    data['Prior Authorization'] === 'YES' ? 'authorization required' : 'no authorization',\n    data['Hospitalization days'] === 'YES' || (data['Hospitalization days'] && data['Hospitalization days'] !== 'NO' && data['Hospitalization days'] !== 'NULL') ? 'hospitalization inpatient' : 'outpatient',\n    data['Hospital level'] ? data['Hospital level'].split('/').join(' ') : '',\n    data['Registered Specialized'] ? data['Registered Specialized'].split('/').join(' ') : '',\n    'dental surgery procedure medical treatment'\n  ].filter(kw => kw && kw !== 'NULL' && kw !== 'ALL').join(' ');\n  \n  item.json.denseContent = denseText;\n  item.json.sparseContent = sparseKeywords;\n  item.json.combinedContent = `${denseText} ${sparseKeywords}`;\n}\n\nreturn $input.all();"
       },
-      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        -1216
+      ],
+      "id": "3a994cd5-862a-45cc-be1f-64d8fc0fe000",
+      "name": "Create Dense+Sparse Content from JSON objects1"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Match this structured claim to the best rules engine by values, fields and types.\n\n",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rules-engine",
+          "mode": "list",
+          "cachedResultName": "rules-engine"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        560
+      ],
+      "id": "ca196760-f469-426c-849a-99f61b521d50",
+      "name": "Retrieve Compatible Rules4",
+      "credentials": {
+        "qdrantApi": {
+          "id": "9g9FVeOFvcZvztrb",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==== CONVERSATION HISTORY ===\n{{ $json.conversation_history }}\n\n=== CURRENT USER MESSAGE ===\n{{ $json.user_message }}",
+        "options": {
+          "systemMessage": "You are an intelligent claims verification assistant. Your task is to evaluate whether the provided insurance claim information aligns with the relevant rules and guidelines. Analyze the claim carefully, identify any discrepancies or conflicts, and clearly indicate whether the claim is compliant or requires further review. Provide concise explanations and actionable insights to help the user make informed decisions. Focus on accuracy, clarity, and practical guidance. Always use the Qdrant document retriever to access relevant documents, guidelines, and reference materials before providing an assessment."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -256,
+        272
+      ],
+      "id": "25ddc8f2-957d-4e09-bc2f-7bdc561bb3a0",
+      "name": "Rules Engine AI Agent4"
+    },
+    {
+      "parameters": {
+        "model": "embeddinggemma:300m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        1712,
-        192
+        64,
+        704
       ],
-      "id": "1a165db2-a08e-4394-b29c-d7153151d119",
-      "name": "Token Splitter"
+      "id": "ec982641-6047-4b76-abd8-2d7335d5395a",
+      "name": "embeddinggemma:300m (1)4",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Ioik0GQDygB82fN6",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        560
+      ],
+      "id": "9bdce607-28ea-4146-9d32-de2327d12964",
+      "name": "Groq Chat Model6",
+      "credentials": {
+        "groqApi": {
+          "id": "pAwckXPf9euftlt9",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT message_id, role, content, created_at \nFROM messages \nWHERE thread_id = '{{ $json.thread_id }}'\nORDER BY created_at ASC\nLIMIT 7;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -704,
+        272
+      ],
+      "id": "ec048da4-64a6-45f9-9da3-72cc060a1d44",
+      "name": "SQL: Fetch Messages",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Format/ Prepare Thread Msgs').item.json.thread_id }}',\n  'assistant',\n  '{{ $json.output }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        96,
+        272
+      ],
+      "id": "8c1b2f7d-d48d-4f79-80ab-4b0341e9e5dd",
+      "name": "SQL: Save AI Message",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"response\": \"{{ $('Rules Engine AI Agent4').item.json.output }}\" \n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        304,
+        272
+      ],
+      "id": "b4d9aecf-4b44-45d7-a69b-2f8abf94a1f1",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Optional: update thread's updated_at timestamp\nUPDATE threads\nSET updated_at = NOW()\nWHERE thread_id = '{{ $('Code in JavaScript').item.json.thread_id }}';\n\n-- Insert the new user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -944,
+        416
+      ],
+      "id": "2ede3e2d-b283-45f2-bad8-5247de59e586",
+      "name": "SQL: Insert msg to existing Thread",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all history messages from Postgres\nconst historyItems = $input.all();\n\n// Get thread data from Thread ID Handler (text only, no binary)\nconst threadHandler = $('Code in JavaScript').first().json;\nconst threadId = threadHandler.thread_id;\nconst userMessage = threadHandler.user_message;\n\n// Format conversation history as readable text\nlet conversationHistory = '';\n\nif (historyItems.length > 0) {\n  conversationHistory = historyItems.map(item => {\n    const role = item.json.role === 'user' ? 'Human' : 'Assistant';\n    const content = item.json.content;\n    return `${role}: ${content}`;\n  }).join('\\n\\n');\n} else {\n  conversationHistory = 'This is the start of the conversation.';\n}\n\n// Create messages array format (for alternative use)\nconst messagesArray = historyItems.map(item => ({\n  role: item.json.role,\n  content: item.json.content\n}));\n\n// Return formatted data (NO binary data)\nreturn {\n  json: {\n    thread_id: threadId,\n    user_message: userMessage,\n    conversation_history: conversationHistory,\n    messages_array: messagesArray,\n    total_messages: historyItems.length\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        272
+      ],
+      "id": "b5c8e0d2-6c4e-4e7e-b012-2f2893f2c9e2",
+      "name": "Format/ Prepare Thread Msgs"
+    },
+    {
+      "parameters": {
+        "path": "threads",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2112,
+        816
+      ],
+      "id": "f272e945-7db4-4b6b-8f5c-09b2004501d0",
+      "name": "Webhook3",
+      "webhookId": "2073ff21-3b85-4a26-bd6e-200129833706"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1696,
+        816
+      ],
+      "id": "8de9cf06-b5bb-4b9c-ad13-c3049959aeca",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    thread_id, \n    title, \n    created_at, \n    updated_at \nFROM threads \nORDER BY updated_at DESC \nLIMIT 50; ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1904,
+        816
+      ],
+      "id": "40785255-336c-4490-9787-08968a58d18a",
+      "name": "SQL: Fetch Threads",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "messages",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2112,
+        1120
+      ],
+      "id": "79aa2ed3-f70d-4e07-9072-02b6a3f9e89a",
+      "name": "Webhook4",
+      "webhookId": "eab2e1ce-3094-4122-b56f-49aa0078387b"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Select all messages for a specific thread\nSELECT \n    role, \n    content, \n    created_at \nFROM messages \nWHERE thread_id = '{{ $json.query.thread_id }}' \nORDER BY created_at ASC;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1888,
+        1120
+      ],
+      "id": "236acb98-2fd9-4983-94d1-8ccee8cc99bd",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -1680,
+        1120
+      ],
+      "id": "587bdb46-add9-47a1-94cc-d2be75197b0c",
+      "name": "Respond to Webhook4"
     }
   ],
   "pinData": {},
   "connections": {
-    "Download Claim": {
+    "Webhook": {
       "main": [
         [
           {
-            "node": "Local Docling OCR Preprocess",
+            "node": "Clean up Payload",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Wait 1 sec": {
+    "GPT OSS 20B": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Claims Rec",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claims Rec – MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent - Claims Rec",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean up Payload": {
       "main": [
         [
           {
-            "node": "Check the status of the Docling/OCR process",
+            "node": "AI Agent - Claims Rec",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Extract Markdown from Document": {
+    "AI Agent - Claims Rec": {
       "main": [
         [
           {
-            "node": "Qdrant Vector Store",
+            "node": "Respond to Webhook",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "If parsing still on": {
+    "Pull Rules Engine Excel file": {
       "main": [
         [
           {
-            "node": "Extract Markdown from Document",
+            "node": "Convert excel to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RUN !": {
+      "main": [
+        [
+          {
+            "node": "Pull Rules Engine Excel file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert excel to JSON": {
+      "main": [
+        [
+          {
+            "node": "Create Dense+Sparse Content from JSON objects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Rules": {
+      "main": [
+        [
+          {
+            "node": "ECHO DONE. IN N8N BASH",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Wait 1 sec",
+            "node": "Get one Organized Readable Rule",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Check the status of the Docling/OCR process": {
+    "Get one Organized Readable Rule": {
       "main": [
         [
           {
-            "node": "If parsing still on",
+            "node": "Convert to Natural Language Rule",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Loop Over Claims": {
+    "Convert to Natural Language Rule": {
       "main": [
         [
           {
-            "node": "Echo done",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Download Claim",
+            "node": "Rules-Engine Vectorstore",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch All Claims Metadata from Storage": {
+    "Rules-Engine Vectorstore": {
       "main": [
         [
           {
-            "node": "Loop Over Claims",
+            "node": "Loop Over Rules",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Schedule for Every Midnight": {
-      "main": [
-        [
-          {
-            "node": "Fetch All Claims Metadata from Storage",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Local Docling OCR Preprocess": {
-      "main": [
-        [
-          {
-            "node": "Check the status of the Docling/OCR process",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Default Data Loader": {
+    "Load Natural Language Rule": {
       "ai_document": [
         [
           {
-            "node": "Qdrant Vector Store",
+            "node": "Rules-Engine Vectorstore",
             "type": "ai_document",
             "index": 0
           }
         ]
       ]
     },
-    "Local Embeddings Model": {
-      "ai_embedding": [
-        [
-          {
-            "node": "Qdrant Vector Store",
-            "type": "ai_embedding",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Token Splitter": {
+    "Biggest Token Chunk Size": {
       "ai_textSplitter": [
         [
           {
-            "node": "Default Data Loader",
+            "node": "Load Natural Language Rule",
             "type": "ai_textSplitter",
             "index": 0
           }
         ]
       ]
     },
-    "Qdrant Vector Store": {
+    "embeddinggemma:300m (2)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Rules-Engine Vectorstore",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Claim Info with Paddle OCR": {
       "main": [
         [
           {
-            "node": "Loop Over Claims",
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert image to BASE64": {
+      "main": [
+        [
+          {
+            "node": "Extract Claim Info with Paddle OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Compatible Rules": {
+      "ai_tool": [
+        [
+          {
+            "node": "Rules Engine AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "embeddinggemma:300m (1)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Retrieve Compatible Rules",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Dense+Sparse Content from JSON objects": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Thread/Message Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Rules Engine AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Rules Engine AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Rules Engine AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "IF: has a file ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: is new thread ?": {
+      "main": [
+        [
+          {
+            "node": "SQL: Create New Thread/ User Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL: Insert msg to existing Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Thread/Message Schema": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: has a file ?": {
+      "main": [
+        [
+          {
+            "node": "Convert image to BASE64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: is new thread ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Create New Thread/ User Message": {
+      "main": [
+        [
+          {
+            "node": "SQL: Fetch Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "Clean up Payload1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT OSS 20B1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent - Claims Rec1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claims Rec – MCP Client1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent - Claims Rec1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean up Payload1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Claims Rec1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Claims Rec1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pull Rules Engine Excel file1": {
+      "main": [
+        [
+          {
+            "node": "Convert excel to JSON1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert excel to JSON1": {
+      "main": [
+        [
+          {
+            "node": "Create Dense+Sparse Content from JSON objects1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Rules1": {
+      "main": [
+        [
+          {
+            "node": "ECHO DONE. IN N8N BASH1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get one Organized Readable Rule1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get one Organized Readable Rule1": {
+      "main": [
+        [
+          {
+            "node": "Convert to Natural Language Rule1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Natural Language Rule1": {
+      "main": [
+        [
+          {
+            "node": "Rules-Engine Vectorstore1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rules-Engine Vectorstore1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Rules1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Natural Language Rule1": {
+      "ai_document": [
+        [
+          {
+            "node": "Rules-Engine Vectorstore1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Biggest Token Chunk Size1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Load Natural Language Rule1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "embeddinggemma:300m (2)1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Rules-Engine Vectorstore1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Dense+Sparse Content from JSON objects1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Rules1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Compatible Rules4": {
+      "ai_tool": [
+        [
+          {
+            "node": "Rules Engine AI Agent4",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rules Engine AI Agent4": {
+      "main": [
+        [
+          {
+            "node": "SQL: Save AI Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "embeddinggemma:300m (1)4": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Retrieve Compatible Rules4",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Rules Engine AI Agent4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Fetch Messages": {
+      "main": [
+        [
+          {
+            "node": "Format/ Prepare Thread Msgs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Save AI Message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Insert msg to existing Thread": {
+      "main": [
+        [
+          {
+            "node": "SQL: Fetch Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format/ Prepare Thread Msgs": {
+      "main": [
+        [
+          {
+            "node": "Rules Engine AI Agent4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook3": {
+      "main": [
+        [
+          {
+            "node": "SQL: Fetch Threads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Fetch Threads": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook4": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook4",
             "type": "main",
             "index": 0
           }
@@ -456,15 +1828,34 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "036ca273-d7b6-40e8-9fbf-f29bf47239e0",
+  "versionId": "e51a221b-ce03-44be-a4d7-84ce4e628e96",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "753d68970f38014a2e1e2d4a866b561ee34f9f91ba59e2ddb608002b70d5c941"
+    "instanceId": "b9434c6dfefdabca09fc57ee2f0dce8039d2dd5c888f0d629b5404390b1ef2c1"
   },
-  "id": "GCxI6jFUwEDeGL9K",
-  "tags": []
+  "id": "2U8lxXMrUX6ImKgy",
+  "tags": [
+    {
+      "updatedAt": "2025-11-27T11:34:52.112Z",
+      "createdAt": "2025-11-27T11:34:52.112Z",
+      "id": "Ac41p9UK0IYTaxiL",
+      "name": "mcp"
+    },
+    {
+      "updatedAt": "2025-11-27T11:34:54.106Z",
+      "createdAt": "2025-11-27T11:34:54.106Z",
+      "id": "LWWUAu0YA5M7ST53",
+      "name": "agent"
+    },
+    {
+      "updatedAt": "2025-11-27T11:34:58.248Z",
+      "createdAt": "2025-11-27T11:34:58.248Z",
+      "id": "ye3pWP9MqmOjAep2",
+      "name": "session"
+    }
+  ]
 }
