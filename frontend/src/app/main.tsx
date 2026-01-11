@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useRef, useEffect } from 'react';
-import { FiSidebar, FiShare, FiInfo, FiArrowDown } from 'react-icons/fi';
+import { FiSidebar, FiShare, FiInfo, FiArrowDown, FiAlertTriangle } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
 import Message from './components/Message';
 import InputComponent from './components/InputComponent';
@@ -22,6 +22,7 @@ const AIChatInterface = () => {
   const [refreshThreadsTrigger, setRefreshThreadsTrigger] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [streamingMessageIndex, setStreamingMessageIndex] = useState<number | null>(null);
+  const [isMcpMode, setIsMcpMode] = useState(false);
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -253,10 +254,10 @@ const AIChatInterface = () => {
 
       <main className="flex-1 flex flex-col min-w-0 bg-white relative z-0">
 
-        <header className="h-14 border-b border-gray-100 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
+        <header className="border-b border-gray-100 flex items-center justify-between px-4 md:px-6 flex-shrink-0 min-h-14">
           <div className="flex items-center gap-3 overflow-hidden">
             {(!isSidebarOpen || isMobile) && (
-              <button 
+              <button
                 onClick={() => setIsSidebarOpen(true)}
                 className={`p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors ${isMobile && isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
               >
@@ -265,13 +266,16 @@ const AIChatInterface = () => {
             )}
             <h1 className="text-base md:text-lg font-semibold text-gray-800 truncate">ZHSF AI Chatbot</h1>
           </div>
-          <div className="flex items-center gap-3 md:gap-4 text-gray-400 flex-shrink-0">
-            <FiShare className="w-5 h-5 hover:text-gray-600 cursor-pointer" />
-            <FiInfo className="w-5 h-5 hover:text-gray-600 cursor-pointer" />
-          </div>
+          {isMcpMode && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
+              <img src="/mcp-icon.svg" alt="MCP" className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden md:inline">Using MCP server with AI reconciliation tools; File attachment, RAG, OCR, and rules engine <span className="text-red-700 font-bold">are disabled.</span></span>
+              <span className="md:hidden">MCP: AI tools active</span>
+            </div>
+          )}
         </header>
 
-        <div ref={chatAreaRef} className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-200">
+        <div ref={chatAreaRef} className={`flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-200 ${isMcpMode ? 'bg-yellow-100' : ''} transition-colors duration-500 ease-in-out`}>
           <div className="max-w-3xl mx-auto space-y-6 md:space-y-8 pb-4">
             {isNewChatMode ? (
               <NewChatWelcome />
@@ -330,6 +334,7 @@ const AIChatInterface = () => {
                   type={message.role === 'assistant' ? 'ai' : 'user'}
                   content={message.content}
                   onCopy={() => handleCopy(message.content)}
+                  isMcpMode={isMcpMode}
                 />
               ))
             )}
@@ -351,17 +356,21 @@ const AIChatInterface = () => {
           </div>
         )}
 
-        <InputComponent
-          messageText={messageText}
-          setMessageText={setMessageText}
-          onSend={sendMessage}
-          isSending={isSending}
-          uploadProgress={uploadProgress}
-          uploadedFile={uploadedFile}
-          handleFileSelect={handleFileSelect}
-          removeFile={removeFile}
-          fileInputRef={fileInputRef}
-        />
+        <div className={`${isMcpMode ? 'bg-yellow-100' : ''} transition-colors duration-500 ease-in-out`}>
+          <InputComponent
+            messageText={messageText}
+            setMessageText={setMessageText}
+            onSend={sendMessage}
+            isSending={isSending}
+            uploadProgress={uploadProgress}
+            uploadedFile={uploadedFile}
+            handleFileSelect={handleFileSelect}
+            removeFile={removeFile}
+            fileInputRef={fileInputRef}
+            isMcpMode={isMcpMode}
+            setIsMcpMode={setIsMcpMode}
+          />
+        </div>
 
       </main>
     </div>
