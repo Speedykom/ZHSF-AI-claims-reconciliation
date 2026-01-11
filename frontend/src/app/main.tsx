@@ -129,6 +129,7 @@ const AIChatInterface = () => {
       }
       if (uploadedFile) {
         formData.append('file', uploadedFile);
+        formData.append('attachmentName', uploadedFile.name);
       }
 
       const response = await fetch('/api/webhook', {
@@ -280,10 +281,10 @@ const AIChatInterface = () => {
             {isNewChatMode ? (
               <NewChatWelcome />
             ) : !selectedThreadId ? (
-              <div className="flex items-center justify-center h-full text-gray-500">
+              <div className="flex items-center justify-center min-h-[calc(100vh-12rem)] text-gray-500">
                 <div className="text-center">
-                  <p className="text-lg mb-2">Select a conversation from the sidebar</p>
-                  <p className="text-sm">Choose a thread to view messages</p>
+                  <p className="text-lg mb-2">Choose a thread to view messages</p>
+                  <p className="text-sm text-gray-400">Or press "New Chat" to start a conversation</p>
                 </div>
               </div>
             ) : loadingMessages ? (
@@ -335,6 +336,7 @@ const AIChatInterface = () => {
                   content={message.content}
                   onCopy={() => handleCopy(message.content)}
                   isMcpMode={isMcpMode}
+                  attachment_name={message.attachment_name}
                 />
               ))
             )}
@@ -356,21 +358,23 @@ const AIChatInterface = () => {
           </div>
         )}
 
-        <div className={`${isMcpMode ? 'bg-yellow-100' : ''} transition-colors duration-500 ease-in-out`}>
-          <InputComponent
-            messageText={messageText}
-            setMessageText={setMessageText}
-            onSend={sendMessage}
-            isSending={isSending}
-            uploadProgress={uploadProgress}
-            uploadedFile={uploadedFile}
-            handleFileSelect={handleFileSelect}
-            removeFile={removeFile}
-            fileInputRef={fileInputRef}
-            isMcpMode={isMcpMode}
-            setIsMcpMode={setIsMcpMode}
-          />
-        </div>
+        {(selectedThreadId || isNewChatMode) && (
+          <div className={`${isMcpMode ? 'bg-yellow-100' : ''} transition-colors duration-500 ease-in-out`}>
+            <InputComponent
+              messageText={messageText}
+              setMessageText={setMessageText}
+              onSend={sendMessage}
+              isSending={isSending}
+              uploadProgress={uploadProgress}
+              uploadedFile={uploadedFile}
+              handleFileSelect={handleFileSelect}
+              removeFile={removeFile}
+              fileInputRef={fileInputRef}
+              isMcpMode={isMcpMode}
+              setIsMcpMode={setIsMcpMode}
+            />
+          </div>
+        )}
 
       </main>
     </div>
