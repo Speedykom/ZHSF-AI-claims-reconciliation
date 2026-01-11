@@ -44,37 +44,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let n8nResponse;
-
+    const n8nFormData = new FormData();
+    n8nFormData.append('message', message);
+    if (threadId) {
+      n8nFormData.append('thread_id', threadId);
+    }
     if (hasFile && fileData) {
-      // send as multipart/form-data with file
-      const n8nFormData = new FormData();
-      n8nFormData.append('message', message);
-      n8nFormData.append('thread_id', threadId || '');
       n8nFormData.append('has_file', 'true');
-      
       const file = fileData.get('file');
       if (file) {
         n8nFormData.append('file', file);
       }
-
-      n8nResponse = await fetch('http://172.18.0.11:5678/webhook-test/RAG', {
-        method: 'POST',
-        body: n8nFormData,
-      });
-    } else {
-      // send text only message
-      n8nResponse = await fetch('http://172.18.0.11:5678/webhook-test/RAG', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: message,
-          thread_id: threadId,
-        }),
-      });
     }
+
+    const n8nResponse = await fetch('http://172.18.0.11:5678/webhook/RAG', {
+      method: 'POST',
+      body: n8nFormData,
+    });
 
     if (!n8nResponse.ok) {
       const errorText = await n8nResponse.text();
@@ -85,10 +71,12 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await n8nResponse.json();
+    const responseThreadId = result.thread_id || result.threadId || result.id;
+    const finalThreadId = responseThreadId || threadId;
 
     return NextResponse.json({
       success: true,
-      thread_id: result.thread_id || threadId,
+      thread_id: finalThreadId,
       response: result.response || result.output || result,
       has_file: hasFile,
     });
