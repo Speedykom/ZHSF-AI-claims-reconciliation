@@ -113,14 +113,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
         <div className="flex-1 overflow-y-auto px-3 py-2 space-y-6 scrollbar-hide">
 
           <div>
-            <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">Pinned</h3>
-            <div className="group flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#EDEDF0] cursor-pointer text-sm text-gray-700">
-              <BsPinAngleFill className="w-4 h-4 text-orange-400 flex-shrink-0" />
-              <span className="truncate">Project Delta Plan</span>
-            </div>
-          </div>
-
-          <div>
             <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">Chat History</h3>
 
             {loading || searchLoading ? (
