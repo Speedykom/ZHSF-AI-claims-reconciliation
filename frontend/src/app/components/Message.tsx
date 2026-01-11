@@ -2,14 +2,16 @@ import React from 'react';
 import { FiCopy, FiUser } from 'react-icons/fi';
 import { BsRobot } from 'react-icons/bs';
 import MarkdownRenderer from './MarkdownRenderer';
+import { Streamdown } from 'streamdown';
 
 interface MessageProps {
   type: 'ai' | 'user';
   content: string;
   onCopy?: () => void;
+  isStreaming?: boolean;
 }
 
-const Message: React.FC<MessageProps> = ({ type, content, onCopy }) => {
+const Message: React.FC<MessageProps> = ({ type, content, onCopy, isStreaming = false }) => {
   if (type === 'ai') {
     return (
       <div className="flex gap-4 group">
@@ -26,7 +28,11 @@ const Message: React.FC<MessageProps> = ({ type, content, onCopy }) => {
             )}
           </div>
           <div className="text-gray-800 leading-relaxed text-[15px] break-words">
-            <MarkdownRenderer content={content} />
+            {isStreaming ? (
+              <Streamdown>{content}</Streamdown>
+            ) : (
+              <MarkdownRenderer content={content} />
+            )}
           </div>
         </div>
       </div>
