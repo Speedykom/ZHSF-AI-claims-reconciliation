@@ -17,6 +17,11 @@ const AIChatInterface = () => {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isNewChatMode, setIsNewChatMode] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [refreshThreadsTrigger, setRefreshThreadsTrigger] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [streamingMessageIndex, setStreamingMessageIndex] = useState<number | null>(null);
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,6 +116,115 @@ const AIChatInterface = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const sendMessage = async () => {
+    if (!messageText.trim() && !uploadedFile) return;
+
+    setIsSending(true);
+    try {
+      const formData = new FormData();
+      formData.append('message', messageText);
+      if (selectedThreadId) {
+        formData.append('thread_id', selectedThreadId);
+      }
+      if (uploadedFile) {
+        formData.append('file', uploadedFile);
+      }
+
+      const response = await fetch('/api/webhook', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const newThreadId = result.thread_id;
+
+        if (isNewChatMode && newThreadId) {
+          setSelectedThreadId(newThreadId);
+          setIsNewChatMode(false);
+          setRefreshThreadsTrigger(prev => prev + 1);
+        }
+
+        setMessageText('');
+        setUploadedFile(null);
+        setUploadProgress(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+
+        setErrorMessage(null);
+
+        if (selectedThreadId || newThreadId) {
+          const threadIdToFetch = selectedThreadId || newThreadId;
+          const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadIdToFetch)}`);
+          if (messagesResponse.ok) {
+            const data = await messagesResponse.json();
+            setMessages(data);
+
+            const latestAssistantIndex = data.findLastIndex((msg: MessageType) => msg.role === 'assistant');
+            if (latestAssistantIndex !== -1) {
+              setStreamingMessageIndex(latestAssistantIndex);
+              const streamingDuration = Math.max(1000, data[latestAssistantIndex].content.length * 20); // ~20ms per character
+              setTimeout(() => {
+                setStreamingMessageIndex(null);
+              }, streamingDuration);
+            }
+
+            setTimeout(scrollToBottom, 100);
+          }
+        }
+      } else {
+        const errorText = await response.text();
+        setErrorMessage(`Failed to send message: ${errorText || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const refreshThreadsWithRetry = async (retries = 3) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch('/api/threads');
+        if (response.ok) {
+          const data = await response.json();
+          const threadsArray = Array.isArray(data) ? data : [data];
+          const hasNewThread = threadsArray.some((thread: any) => thread.thread_id === selectedThreadId);
+          if (hasNewThread || i === retries - 1) {
+            setRefreshThreadsTrigger(prev => prev + 1);
+            break;
+          }
+        }
+      } catch (error) {
+        console.error('Error refreshing threads:', error);
+      }
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  };
+
+  const fetchMessagesWithRetry = async (threadId: string, retries = 5) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadId)}`);
+        if (messagesResponse.ok) {
+          const data = await messagesResponse.json();
+          if (data && data.length > 0) {
+            setMessages(data);
+            setTimeout(scrollToBottom, 100);
+            break;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  };
+
   return (
     <div className="flex h-screen w-full bg-white text-gray-800 font-sans antialiased overflow-hidden selection:bg-gray-100 relative">
 
@@ -126,6 +240,7 @@ const AIChatInterface = () => {
         setIsSidebarOpen={setIsSidebarOpen}
         isMobile={isMobile}
         selectedThreadId={selectedThreadId}
+        refreshTrigger={refreshThreadsTrigger}
         onThreadSelect={(threadId) => {
           setSelectedThreadId(threadId);
           setIsNewChatMode(false);
@@ -230,7 +345,17 @@ const AIChatInterface = () => {
           <FiArrowDown className="w-5 h-5 text-gray-600" />
         </button>
 
+        {errorMessage && (
+          <div className="p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg mx-4 md:mx-8 mb-2">
+            <p className="text-red-800 text-sm">{errorMessage}</p>
+          </div>
+        )}
+
         <InputComponent
+          messageText={messageText}
+          setMessageText={setMessageText}
+          onSend={sendMessage}
+          isSending={isSending}
           uploadProgress={uploadProgress}
           uploadedFile={uploadedFile}
           handleFileSelect={handleFileSelect}
