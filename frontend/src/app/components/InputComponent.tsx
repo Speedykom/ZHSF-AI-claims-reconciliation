@@ -2,6 +2,10 @@ import React, { RefObject } from 'react';
 import { FiArrowUp, FiPaperclip, FiX } from 'react-icons/fi';
 
 interface InputComponentProps {
+  messageText: string;
+  setMessageText: (text: string) => void;
+  onSend: () => void;
+  isSending: boolean;
   uploadProgress: number | null;
   uploadedFile: File | null;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -10,6 +14,10 @@ interface InputComponentProps {
 }
 
 const InputComponent: React.FC<InputComponentProps> = ({
+  messageText,
+  setMessageText,
+  onSend,
+  isSending,
   uploadProgress,
   uploadedFile,
   handleFileSelect,
@@ -19,7 +27,13 @@ const InputComponent: React.FC<InputComponentProps> = ({
   return (
     <div className="p-3 md:p-4 pb-4 md:pb-6">
       <div className="max-w-3xl mx-auto">
-        {(uploadProgress !== null || uploadedFile) && (
+      {isSending && uploadedFile ? (
+          <div className="mb-3 bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center justify-center">
+            <span className="text-sm text-gray-400 italic animate-pulse">
+              We're analyzing your file; it usually takes a minute or so ...
+            </span>
+          </div>
+        ) : (uploadProgress !== null || uploadedFile) && (
           <div className="mb-3 bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-3">
             <FiPaperclip className="w-4 h-4 text-gray-500" />
             <div className="flex-1 min-w-0">
@@ -60,11 +74,24 @@ const InputComponent: React.FC<InputComponentProps> = ({
           <input
             type="text"
             placeholder="Message AI..."
-            className="w-full bg-white border border-gray-200 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] text-gray-700 rounded-2xl py-3 md:py-3.5 pl-10 md:pl-12 pr-12 outline-none focus:border-gray-300 focus:ring-0 text-sm md:text-[15px] placeholder-gray-400"
+            value={messageText}
+            onChange={(e) => setMessageText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                onSend();
+              }
+            }}
+            disabled={isSending}
+            className="w-full bg-white border border-gray-200 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] text-gray-700 rounded-2xl py-3 md:py-3.5 pl-10 md:pl-12 pr-12 outline-none focus:border-gray-300 focus:ring-0 text-sm md:text-[15px] placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
 
           <div className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2">
-            <button className="w-8 h-8 rounded-lg bg-black hover:bg-gray-800 flex items-center justify-center transition-colors disabled:opacity-50">
+            <button
+              onClick={onSend}
+              disabled={isSending || (!messageText.trim() && !uploadedFile)}
+              className="w-8 h-8 rounded-lg bg-black hover:bg-gray-800 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <FiArrowUp className="text-white w-5 h-5" />
             </button>
           </div>
