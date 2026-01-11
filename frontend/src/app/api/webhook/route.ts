@@ -55,9 +55,13 @@ export async function POST(request: NextRequest) {
       if (file) {
         n8nFormData.append('file', file);
       }
+      const attachmentName = fileData.get('attachmentName');
+      if (attachmentName) {
+        n8nFormData.append('attachmentName', attachmentName as string);
+      }
     }
 
-    const n8nResponse = await fetch('http://172.18.0.11:5678/webhook/RAG', {
+    const n8nResponse = await fetch('http://172.18.0.11:5678/webhook-test/RAG', {
       method: 'POST',
       body: n8nFormData,
     });
