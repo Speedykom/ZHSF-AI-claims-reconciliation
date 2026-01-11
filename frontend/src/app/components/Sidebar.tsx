@@ -12,11 +12,12 @@ interface SidebarProps {
   setIsSidebarOpen: (open: boolean) => void;
   isMobile: boolean;
   selectedThreadId: string | null;
+  refreshTrigger: number;
   onThreadSelect: (threadId: string) => void;
   onNewChat: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMobile, selectedThreadId, onThreadSelect, onNewChat }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMobile, selectedThreadId, refreshTrigger, onThreadSelect, onNewChat }) => {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
     };
 
     fetchThreads();
-  }, []);
+  }, [refreshTrigger]);
 
   useEffect(() => {
     if (searchQuery) {
