@@ -288,14 +288,14 @@
         "url": "http://paddleocr:5002/process",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"image\":  \"{{ $json.data }}\"\n}",
+        "jsonBody": "={\n  \"image\":  \"{{ $('Convert image to BASE64').item.json.file0 }}\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -960,
-        -336
+        -912,
+        -304
       ],
       "id": "f49c458f-d2c5-4952-b599-46be27be8949",
       "name": "Extract Claim Info with Paddle OCR"
@@ -303,22 +303,25 @@
     {
       "parameters": {
         "operation": "binaryToPropery",
-        "binaryPropertyName": "file",
+        "binaryPropertyName": "file0",
+        "destinationKey": "=file0",
         "options": {}
       },
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -1168,
-        -336
+        -1920,
+        304
       ],
       "id": "e9a5ab20-ff2c-4494-9e22-4f71ab48d68f",
-      "name": "Convert image to BASE64"
+      "name": "Convert image to BASE64",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "mode": "retrieve-as-tool",
-        "toolDescription": "=Match this structured claim to the best rules engine by values, fields and types.\n\n",
+        "toolDescription": "=Search policy and claim handling rules.\nReturn rules relevant to the claim facts.\nOnly retrieved rules may be used.",
         "qdrantCollection": {
           "__rl": true,
           "value": "rules-engine",
@@ -330,8 +333,8 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.3,
       "position": [
-        -112,
-        -64
+        736,
+        -112
       ],
       "id": "02922297-4ec5-4ed4-ac0f-b0d789ed15f3",
       "name": "Retrieve Compatible Rules",
@@ -345,15 +348,15 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $('Webhook1').item.json.body.message }}\n\n```markdown\n{{ $json.markdown[0] }}\n```",
+        "text": "==== CONVERSATION HISTORY ===\n\n{{ $('Format/ Prepare Thread Msgs1').item.json.conversation_history }}\n\n=== CURRENT USER MESSAGE ===\n{{ $('Code in JavaScript').first().json.user_message }}\n\n\n```markdown\n{{ $json.text }}\n```",
         "options": {
-          "systemMessage": "You are an intelligent claims verification assistant. Your task is to evaluate whether the provided insurance claim information aligns with the relevant rules and guidelines. Analyze the claim carefully, identify any discrepancies or conflicts, and clearly indicate whether the claim is compliant or requires further review. Provide concise explanations and actionable insights to help the user make informed decisions. Focus on accuracy, clarity, and practical guidance. Always use the Qdrant document retriever to access relevant documents, guidelines, and reference materials before providing an assessment."
+          "systemMessage": "You evaluate insurance claims using policy rules.\n\nRead the claim document and extract relevant facts.\nSearch the rules database using the Qdrant tool to find applicable rules.\nApply only the retrieved rules to the claim.\n\nDo not assume missing facts.\nDo not invent rules.\nIf no applicable rules are found, say so clearly.\n\nExplain your conclusion briefly."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        -368,
+        576,
         -336
       ],
       "id": "e51077a5-4235-4a41-b09a-79f56db8389a",
@@ -366,7 +369,7 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -16,
+        864,
         80
       ],
       "id": "d8fe6236-c640-41f7-8082-0d37ee918d5c",
@@ -396,7 +399,9 @@
         "httpMethod": "POST",
         "path": "RAG",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "binaryPropertyName": "file"
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -416,8 +421,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        -448,
-        -64
+        512,
+        -80
       ],
       "id": "e3ef869a-fade-4f78-a917-24e5ee2bf831",
       "name": "Groq Chat Model",
@@ -430,35 +435,14 @@
     },
     {
       "parameters": {
-        "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Webhook1').item.json.body.user }}_{{ $('Webhook1').item.json.body.thread }}",
-        "contextWindowLength": 10
-      },
-      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
-      "typeVersion": 1.3,
-      "position": [
-        -272,
-        -64
-      ],
-      "id": "e5de2c25-1b30-41e4-80e5-242abc9c3297",
-      "name": "Postgres Chat Memory",
-      "credentials": {
-        "postgres": {
-          "id": "IM3af1wm8PjJkHuM",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "promptType": "define",
-        "text": "=You may receive content that includes Markdown or HTML.\n\n**Task:**\n- Convert and respond **only** in clear, human-readable **Markdown**\n- Do **not** include any HTML in your response\n- Preserve the original meaning, structure, and emphasis\n- Improve readability where appropriate\n\n**Content to process:**\n{{ $json.markdown[0] }}",
+        "text": "=You may receive content that includes Markdown or HTML.\n\n**Task:**\n- Convert and respond **only** in clear, human-readable **Markdown**\n- Do **not** include any HTML in your response\n- Preserve the original meaning, structure, and emphasis\n- Improve readability where appropriate\n\n**Content to process:**\n{{ $('Extract Claim Info with Paddle OCR').first().json.markdown }}",
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        -752,
+        224,
         -336
       ],
       "id": "af570c7c-60ce-4e4c-9317-eac54cfea0a4",
@@ -474,8 +458,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        -752,
-        -128
+        272,
+        -160
       ],
       "id": "b85d18d8-8d33-4468-ad16-ad96dffecf60",
       "name": "Groq Chat Model2",
@@ -493,7 +477,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1696,
+        -1536,
         304
       ],
       "id": "bfa61b69-772f-4c3f-9e88-dca9e4ca695d",
@@ -527,7 +511,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1200,
+        -992,
         320
       ],
       "id": "50de6850-fc1b-42c1-a4cb-d8c84d07d198",
@@ -536,13 +520,13 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Create threads table\nCREATE TABLE IF NOT EXISTS threads (\n    thread_id VARCHAR(100) PRIMARY KEY,\n    title VARCHAR(255),\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- Create messages table\nCREATE TABLE IF NOT EXISTS messages (\n    message_id SERIAL PRIMARY KEY,\n    thread_id VARCHAR(100) NOT NULL,\n    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),\n    content TEXT NOT NULL,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE\n);\n\n-- Create indexes for better performance\nCREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id);\nCREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);\nCREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at);",
+        "query": "-- Create threads table\nCREATE TABLE IF NOT EXISTS threads (\n    thread_id VARCHAR(100) PRIMARY KEY,\n    title VARCHAR(255),\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- Create messages table\nCREATE TABLE IF NOT EXISTS messages (\n    message_id SERIAL PRIMARY KEY,\n    thread_id VARCHAR(100) NOT NULL,\n    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),\n    content TEXT NOT NULL,\n    attachment_name VARCHAR(255), -- Optional attachment field\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE\n);\n\n-- Create indexes for better performance\nCREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id);\nCREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);\nCREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at);",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -1904,
+        -1744,
         304
       ],
       "id": "3f57a525-b25e-4660-aa66-3a12a4b4fc0e",
@@ -563,7 +547,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -944,
+        -736,
         176
       ],
       "id": "007b2f82-da8c-4937-aef3-0d64b669035a",
@@ -603,7 +587,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1488,
+        -1264,
         304
       ],
       "id": "0c6df55b-1c05-44d5-b8eb-e20342fd37c6",
@@ -907,7 +891,7 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.3,
       "position": [
-        -32,
+        176,
         560
       ],
       "id": "ca196760-f469-426c-849a-99f61b521d50",
@@ -930,7 +914,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        -256,
+        -48,
         272
       ],
       "id": "25ddc8f2-957d-4e09-bc2f-7bdc561bb3a0",
@@ -943,7 +927,7 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        64,
+        272,
         704
       ],
       "id": "ec982641-6047-4b76-abd8-2d7335d5395a",
@@ -963,7 +947,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        -368,
+        -160,
         560
       ],
       "id": "9bdce607-28ea-4146-9d32-de2327d12964",
@@ -984,7 +968,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -704,
+        -496,
         272
       ],
       "id": "ec048da4-64a6-45f9-9da3-72cc060a1d44",
@@ -1005,7 +989,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        96,
+        304,
         272
       ],
       "id": "8c1b2f7d-d48d-4f79-80ab-4b0341e9e5dd",
@@ -1020,13 +1004,13 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"response\": \"{{ $('Rules Engine AI Agent4').item.json.output }}\" \n}",
+        "responseBody": "={{ $json }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        304,
+        736,
         272
       ],
       "id": "b4d9aecf-4b44-45d7-a69b-2f8abf94a1f1",
@@ -1041,7 +1025,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -944,
+        -736,
         416
       ],
       "id": "2ede3e2d-b283-45f2-bad8-5247de59e586",
@@ -1060,7 +1044,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -480,
+        -272,
         272
       ],
       "id": "b5c8e0d2-6c4e-4e7e-b012-2f2893f2c9e2",
@@ -1085,7 +1069,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ $json }}",
+        "responseBody": "={{ $input.all().map(item => item.json) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -1137,7 +1121,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Select all messages for a specific thread\nSELECT \n    role, \n    content, \n    created_at \nFROM messages \nWHERE thread_id = '{{ $json.query.thread_id }}' \nORDER BY created_at ASC;",
+        "query": "-- Select all messages for a specific thread\nSELECT \n    role, \n    content, \n    created_at,\n    attachment_name\nFROM messages \nWHERE thread_id = '{{ $json.query.thread_id }}' \nORDER BY created_at ASC;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -1168,6 +1152,178 @@
       ],
       "id": "587bdb46-add9-47a1-94cc-d2be75197b0c",
       "name": "Respond to Webhook4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "096b5129-dc97-4da5-8f53-666cbc148e9a",
+              "leftValue": "={{ $('IF: has a file ?').item.json.is_new_thread }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -704,
+        -304
+      ],
+      "id": "f0f489d7-bf1f-448b-8bb6-472ae66b5949",
+      "name": "IF: is new thread ?1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message with optional attachment\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -464,
+        -432
+      ],
+      "id": "cf9e0d22-6947-4286-bd22-752330784567",
+      "name": "SQL: Create New Thread/ User Message1",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Optional: update thread's updated_at timestamp\nUPDATE threads\nSET updated_at = NOW()\nWHERE thread_id = '{{ $('Code in JavaScript').item.json.thread_id }}';\n\n-- Insert the new user message\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -464,
+        -176
+      ],
+      "id": "d8aa8000-35c1-43de-a7d4-3db40d041f14",
+      "name": "SQL: Insert msg to existing Thread1",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT message_id, role, content, created_at \nFROM messages \nWHERE thread_id = '{{ $json.thread_id }}'\nORDER BY created_at ASC\nLIMIT 6;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -224,
+        -336
+      ],
+      "id": "10fe11df-6e09-43de-96b0-8cddc4807d5a",
+      "name": "SQL: Fetch Messages1",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all history messages from Postgres\nconst historyItems = $input.all();\n\n// Get thread data from Thread ID Handler (text only, no binary)\nconst threadHandler = $('Code in JavaScript').first().json;\nconst threadId = threadHandler.thread_id;\nconst userMessage = threadHandler.user_message;\n\n// Format conversation history as readable text\nlet conversationHistory = '';\n\nif (historyItems.length > 0) {\n  conversationHistory = historyItems.map(item => {\n    const role = item.json.role === 'user' ? 'Human' : 'Assistant';\n    const content = item.json.content;\n    return `${role}: ${content}`;\n  }).join('\\n\\n');\n} else {\n  conversationHistory = 'This is the start of the conversation.';\n}\n\n// Create messages array format (for alternative use)\nconst messagesArray = historyItems.map(item => ({\n  role: item.json.role,\n  content: item.json.content\n}));\n\n// Return formatted data (NO binary data)\nreturn {\n  json: {\n    thread_id: threadId,\n    user_message: userMessage,\n    conversation_history: conversationHistory,\n    messages_array: messagesArray,\n    total_messages: historyItems.length\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -336
+      ],
+      "id": "379f51bf-00a1-440b-9aca-78d237208168",
+      "name": "Format/ Prepare Thread Msgs1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Format/ Prepare Thread Msgs1').item.json.thread_id }}',\n  'assistant',\n  '{{ $json.output }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        880,
+        -336
+      ],
+      "id": "c2a77a20-935d-4b39-9534-8de236bed656",
+      "name": "SQL: Save AI Message1",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1280,
+        -336
+      ],
+      "id": "5d7cbcd6-c1a5-487e-bb15-65fb34c9bd0c",
+      "name": "Respond to Webhook5"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ \n  json: { \n    \"response\": $input.first().json.content,\n    \"thread_id\": $input.first().json.thread_id\n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        -336
+      ],
+      "id": "2cc6de19-1a3c-47d1-b895-8d6fe7b3fc46",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ \n  json: { \n    \"response\": $input.first().json.content,\n    \"thread_id\": $input.first().json.thread_id\n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        272
+      ],
+      "id": "5c1ae6ee-65c9-4a4f-be7e-aab36b561c06",
+      "name": "Code in JavaScript2"
     }
   ],
   "pinData": {},
@@ -1348,7 +1504,7 @@
       "main": [
         [
           {
-            "node": "Basic LLM Chain",
+            "node": "IF: is new thread ?1",
             "type": "main",
             "index": 0
           }
@@ -1359,7 +1515,7 @@
       "main": [
         [
           {
-            "node": "Extract Claim Info with Paddle OCR",
+            "node": "Thread/Message Schema",
             "type": "main",
             "index": 0
           }
@@ -1403,7 +1559,7 @@
       "main": [
         [
           {
-            "node": "Thread/Message Schema",
+            "node": "Convert image to BASE64",
             "type": "main",
             "index": 0
           }
@@ -1416,17 +1572,6 @@
           {
             "node": "Rules Engine AI Agent",
             "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Postgres Chat Memory": {
-      "ai_memory": [
-        [
-          {
-            "node": "Rules Engine AI Agent",
-            "type": "ai_memory",
             "index": 0
           }
         ]
@@ -1498,7 +1643,7 @@
       "main": [
         [
           {
-            "node": "Convert image to BASE64",
+            "node": "Extract Claim Info with Paddle OCR",
             "type": "main",
             "index": 0
           }
@@ -1754,7 +1899,7 @@
       "main": [
         [
           {
-            "node": "Respond to Webhook1",
+            "node": "Code in JavaScript2",
             "type": "main",
             "index": 0
           }
@@ -1826,13 +1971,124 @@
           }
         ]
       ]
+    },
+    "Rules Engine AI Agent": {
+      "main": [
+        [
+          {
+            "node": "SQL: Save AI Message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: is new thread ?1": {
+      "main": [
+        [
+          {
+            "node": "SQL: Create New Thread/ User Message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL: Insert msg to existing Thread1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Create New Thread/ User Message1": {
+      "main": [
+        [
+          {
+            "node": "SQL: Fetch Messages1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Insert msg to existing Thread1": {
+      "main": [
+        [
+          {
+            "node": "SQL: Fetch Messages1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Fetch Messages1": {
+      "main": [
+        [
+          {
+            "node": "Format/ Prepare Thread Msgs1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format/ Prepare Thread Msgs1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Save AI Message1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook5": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "e51a221b-ce03-44be-a4d7-84ce4e628e96",
+  "versionId": "cfb46a0c-81e4-48e6-9913-427cb3d2f2b0",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9434c6dfefdabca09fc57ee2f0dce8039d2dd5c888f0d629b5404390b1ef2c1"
@@ -1840,10 +2096,10 @@
   "id": "2U8lxXMrUX6ImKgy",
   "tags": [
     {
-      "updatedAt": "2025-11-27T11:34:52.112Z",
-      "createdAt": "2025-11-27T11:34:52.112Z",
-      "id": "Ac41p9UK0IYTaxiL",
-      "name": "mcp"
+      "updatedAt": "2025-11-27T11:34:58.248Z",
+      "createdAt": "2025-11-27T11:34:58.248Z",
+      "id": "ye3pWP9MqmOjAep2",
+      "name": "session"
     },
     {
       "updatedAt": "2025-11-27T11:34:54.106Z",
@@ -1852,10 +2108,10 @@
       "name": "agent"
     },
     {
-      "updatedAt": "2025-11-27T11:34:58.248Z",
-      "createdAt": "2025-11-27T11:34:58.248Z",
-      "id": "ye3pWP9MqmOjAep2",
-      "name": "session"
+      "updatedAt": "2025-11-27T11:34:52.112Z",
+      "createdAt": "2025-11-27T11:34:52.112Z",
+      "id": "Ac41p9UK0IYTaxiL",
+      "name": "mcp"
     }
   ]
 }
