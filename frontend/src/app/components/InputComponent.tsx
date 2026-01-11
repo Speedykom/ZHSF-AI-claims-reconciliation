@@ -68,7 +68,7 @@ const InputComponent: React.FC<InputComponentProps> = ({
             onChange={handleFileSelect}
             className="hidden"
           />
-          <div className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2">
+          <div className="absolute left-3 md:left-3 top-1/2 -translate-y-1/2">
             {isMcpMode ? (
               <button
                 onClick={() => setIsMcpMode(!isMcpMode)}
@@ -79,7 +79,7 @@ const InputComponent: React.FC<InputComponentProps> = ({
                 <img src="/mcp-icon.svg" alt="MCP" className="w-5 h-5 md:w-4 md:h-4" />
               </button>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 md:gap-2">
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="w-8 h-8 md:w-6 md:h-6 rounded-full bg-transparent md:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-100 md:hover:bg-gray-300 transition-colors"
@@ -113,7 +113,7 @@ const InputComponent: React.FC<InputComponentProps> = ({
             }}
             disabled={isSending}
             className={`w-full bg-white border border-gray-200 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] text-gray-700 rounded-2xl py-3 md:py-3.5 pr-12 outline-none focus:border-gray-300 focus:ring-0 text-sm md:text-[15px] placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed ${
-              isMcpMode ? 'pl-10 md:pl-12' : 'pl-16 md:pl-20'
+              isMcpMode ? 'pl-12 md:pl-12' : 'pl-20 md:pl-20'
             }`}
           />
 
