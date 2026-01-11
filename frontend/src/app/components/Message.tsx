@@ -9,9 +9,10 @@ interface MessageProps {
   content: string;
   onCopy?: () => void;
   isStreaming?: boolean;
+  isMcpMode?: boolean;
 }
 
-const Message: React.FC<MessageProps> = ({ type, content, onCopy, isStreaming = false }) => {
+const Message: React.FC<MessageProps> = ({ type, content, onCopy, isStreaming = false, isMcpMode = false }) => {
   if (type === 'ai') {
     return (
       <div className="flex gap-4 group">
@@ -27,7 +28,7 @@ const Message: React.FC<MessageProps> = ({ type, content, onCopy, isStreaming = 
               </button>
             )}
           </div>
-          <div className="text-gray-800 leading-relaxed text-[15px] break-words">
+          <div className="leading-relaxed text-[15px] break-words text-gray-800">
             {isStreaming ? (
               <Streamdown>{content}</Streamdown>
             ) : (
@@ -54,7 +55,7 @@ const Message: React.FC<MessageProps> = ({ type, content, onCopy, isStreaming = 
             <FiCopy className="w-4 h-4 text-gray-400 hover:text-gray-600" />
           </button>
         )}
-        <div className="bg-[#F3F4F6] text-gray-800 px-4 py-3 rounded-2xl rounded-tr-sm text-[15px] leading-relaxed">
+        <div className="px-4 py-3 rounded-2xl rounded-tr-sm text-[15px] leading-relaxed bg-[#F3F4F6] text-gray-800">
           <MarkdownRenderer content={content} />
         </div>
       </div>
