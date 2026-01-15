@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const n8nResponse = await fetch('http://172.18.0.11:5678/webhook-test/RAG', {
+    const n8nResponse = await fetch('http://172.18.0.11:5678/webhook/RAG', {
       method: 'POST',
       body: n8nFormData,
     });
