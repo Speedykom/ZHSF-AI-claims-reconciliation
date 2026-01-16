@@ -127,6 +127,9 @@ const AIChatInterface = () => {
       if (selectedThreadId) {
         formData.append('thread_id', selectedThreadId);
       }
+      if (isMcpMode) {
+        formData.append('mcp_is_on', 'true');
+      }
       if (uploadedFile) {
         formData.append('file', uploadedFile);
         formData.append('attachmentName', uploadedFile.name);
