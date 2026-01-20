@@ -8,12 +8,13 @@ export async function POST(request: NextRequest) {
     let threadId: string | null = null;
     let hasFile = false;
     let fileData: FormData | null = null;
+    let mcpIsOn = false;
 
     if (contentType.includes('application/json')) {
-      // text only message
       const body = await request.json();
       message = body.message || '';
       threadId = body.thread_id || null;
+      mcpIsOn = body.mcp_is_on === 'true';
       hasFile = false;
     } else if (contentType.includes('multipart/form-data')) {
       
@@ -21,7 +22,8 @@ export async function POST(request: NextRequest) {
       const formData = await request.formData();
       message = formData.get('message') as string || '';
       threadId = formData.get('thread_id') as string || null;
-      
+      mcpIsOn = (formData.get('mcp_is_on') as string) === 'true';
+
       // check if file exists in form data
       const file = formData.get('file');
       hasFile = file !== null;
@@ -48,6 +50,9 @@ export async function POST(request: NextRequest) {
     n8nFormData.append('message', message);
     if (threadId) {
       n8nFormData.append('thread_id', threadId);
+    }
+    if (mcpIsOn) {
+      n8nFormData.append('mcp_is_on', 'true');
     }
     if (hasFile && fileData) {
       n8nFormData.append('has_file', 'true');
