@@ -55,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
   }, [searchQuery]);
 
   const filteredThreads = threads.filter(thread =>
-    thread.title.toLowerCase().includes(searchQuery.toLowerCase())
+    (thread.title || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
   return (
     <aside
@@ -117,15 +117,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
 
             {loading || searchLoading ? (
               <>
-                <div className="flex items-center gap-3 px-2 py-2 mb-1">
+                <div key="skeleton-1" className="flex items-center gap-3 px-2 py-2 mb-1">
                   <div className="w-4 h-4 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
                   <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
                 </div>
-                <div className="flex items-center gap-3 px-2 py-2 mb-1">
+                <div key="skeleton-2" className="flex items-center gap-3 px-2 py-2 mb-1">
                   <div className="w-4 h-4 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
                   <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
                 </div>
-                <div className="flex items-center gap-3 px-2 py-2">
+                <div key="skeleton-3" className="flex items-center gap-3 px-2 py-2">
                   <div className="w-4 h-4 bg-gray-200 rounded animate-pulse flex-shrink-0"></div>
                   <div className="flex-1 h-4 bg-gray-200 rounded animate-pulse"></div>
                 </div>
@@ -133,9 +133,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
             ) : (
               <>
                 {filteredThreads.length > 0 ? (
-                  filteredThreads.map((thread) => (
+                  filteredThreads.map((thread, index) => (
                     <div
-                      key={thread.thread_id}
+                      key={`${thread.thread_id}-${index}`}
                       onClick={() => onThreadSelect(thread.thread_id)}
                       className={`flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer text-sm mb-1 transition-colors ${
                         selectedThreadId === thread.thread_id
@@ -148,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
                           selectedThreadId === thread.thread_id ? 'text-blue-500' : 'text-gray-400'
                         }`}
                       />
-                      <span className="truncate flex-1">{thread.title}</span>
+                      <span className="truncate flex-1">{thread.title || 'Untitled'}</span>
                     </div>
                   ))
                 ) : searchQuery ? (
@@ -156,7 +156,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
                     <FiInbox className="w-4 h-4 flex-shrink-0" />
                     <span>No chats found</span>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="flex items-center gap-3 px-2 py-4 text-gray-500 text-sm">
+                    <FiInbox className="w-4 h-4 flex-shrink-0" />
+                    <span>No chats yet</span>
+                  </div>
+                )}
               </>
             )}
           </div>

@@ -3,37 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "claims-agent",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -304,
-        2512
-      ],
-      "id": "475e4f5c-3eb3-4ecb-b8ee-eb82ea8dbd60",
-      "name": "Webhook",
-      "webhookId": "98d38ad8-97c3-40ca-84c3-499de69d8fee"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.4,
-      "position": [
-        832,
-        2512
-      ],
-      "id": "3fe35d20-e69e-4b89-ade0-0fe81a2fb281",
-      "name": "Respond to Webhook"
-    },
-    {
-      "parameters": {
-        "model": "openai/gpt-oss-120b",
+        "model": "openai/gpt-oss-20b",
         "options": {
           "temperature": 0
         }
@@ -41,8 +11,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        208,
-        2768
+        -160,
+        -752
       ],
       "id": "717de2c0-c143-4eda-a7ae-0b30954b8e14",
       "name": "GPT OSS 20B",
@@ -63,48 +33,25 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1.2,
       "position": [
-        592,
-        2768
+        224,
+        -752
       ],
       "id": "52948f69-cc37-4f7d-9e51-1638ab5a8f5e",
       "name": "Claims Rec – MCP Client"
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "57fdae2a-3297-4fe5-a548-39c3c1544d80",
-              "name": "chatInput",
-              "value": "={{ $json.body.message }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        0,
-        2512
-      ],
-      "id": "9aa8a790-ef7d-4b4b-ae90-8f24b7e56299",
-      "name": "Clean up Payload"
-    },
-    {
-      "parameters": {
         "promptType": "define",
-        "text": "={{ $json.chatInput }}",
+        "text": "={{ $('Code in JavaScript').first().json.user_message }}\n",
         "options": {
-          "systemMessage": "You are a helpful and friendly assistant working for the Zanzibar Health Services Fund (ZHSF).\nYour role is to support staff by helping them quickly check claim details, claim status, recent claims, patient claims, and by assisting in approving or rejecting claims using the available tools.\nAlways explain things simply, avoid technical language, and guide users gently.\nIf a tool can answer their request, call it.\nBe polite, supportive, and make the workflow easy for the user."
+          "systemMessage": "# System Prompt for GPT-OSS 20B - Claims Recommendation MCP\n\nReasoning: medium\n\nYou are a healthcare claims assistant with access to a Claims Recommendation MCP server managing Tanzania healthcare insurance claims. Your role is to help users query and manage claims efficiently.\n\n## Core Instructions\n\n1. **Tool Usage Protocol**\n   - ONLY pass parameters explicitly defined in each tool's signature\n   - NEVER pass: `chatInput`, `toolCallId`, `thread_id`, `user_message`, `conversation_history`, `timestamp`, `session_id`\n   - Use default parameter values when user doesn't specify\n   - Call tools directly without asking permission\n\n2. **Response Style**\n   - Be concise and professional\n   - Lead with the most relevant information\n   - Use clear formatting for multiple claims\n   - Confirm before approving/rejecting claims\n\n## Available Tools\n\n**list_recent_claims** - Get 1-5 most recent claims\n- Parameters: `limit` (integer, 1-5, default: 5)\n\n**list_old_pending_claims** - Get pending claims by age\n- Parameters: `limit` (integer, 1-50, default: 10), `days_old` (integer, minimum: 1, default: 30)\n\n**list_claims_by_status** - Filter by status (Approved/Rejected/Pending)\n- Parameters: `status` (string: 'Approved'/'Rejected'/'Pending'), `limit` (integer, 1-50, default: 10), `days_old` (integer, default: 0)\n\n**get_claim_by_number** - Get full claim details by number\n- Parameters: `claim_number` (string, e.g., 'ZNB-2024-001')\n\n**get_claim_by_patient_id** - Get all claims for a patient\n- Parameters: `patient_id` (string, e.g., 'PAT-001')\n\n**check_claim_status** - Check current status of a claim\n- Parameters: `claim_number` (string)\n\n**approve_claim** - Approve a claim (status → 'Approved')\n- Parameters: `claim_number` (string, required), `reviewed_by` (string, optional), `notes` (string, optional)\n\n**reject_claim** - Reject a claim (status → 'Rejected')\n- Parameters: `claim_number` (string, required), `reviewed_by` (string, optional), `notes` (string, optional)\n\n## Decision Logic\n\n- \"latest claims\" → use `list_recent_claims`\n- \"pending for X days\" → use `list_old_pending_claims` with `days_old=X`\n- \"approved/rejected claims\" → use `list_claims_by_status`\n- claim number mentioned → use `get_claim_by_number` or `check_claim_status`\n- patient ID mentioned → use `get_claim_by_patient_id`\n- \"approve/reject claim\" → confirm details first, then use `approve_claim` or `reject_claim`\n\n## Data Context\n\nAll claims are from Tanzania's healthcare system. Claims include patient demographics, provider info, diagnoses, procedures, and financial details. Statuses: Pending, Approved, Rejected.\n\n## Error Handling\n\nIf a tool returns an error, explain clearly and suggest alternatives. Maintain professional tone."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        304,
-        2512
+        -64,
+        -1008
       ],
       "id": "ba4b7f46-9489-407c-aebf-28b44f7d405a",
       "name": "AI Agent - Claims Rec"
@@ -117,8 +64,8 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
-        -144,
-        1920
+        -2176,
+        -1840
       ],
       "id": "19da0d96-abf9-4af1-83a6-e0f81ffa40c8",
       "name": "Pull Rules Engine Excel file"
@@ -128,8 +75,8 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        -352,
-        1920
+        -2384,
+        -1840
       ],
       "id": "3416a46d-e5de-4059-957f-f12716653780",
       "name": "RUN !"
@@ -142,8 +89,8 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        64,
-        1920
+        -1968,
+        -1840
       ],
       "id": "047e9e6d-2f26-405a-aee3-415812c8bfb8",
       "name": "Convert excel to JSON"
@@ -155,8 +102,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        512,
-        1920
+        -1520,
+        -1840
       ],
       "id": "37261219-428b-41e5-8699-81954cddde9e",
       "name": "Loop Over Rules"
@@ -178,8 +125,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        736,
-        1936
+        -1296,
+        -1824
       ],
       "id": "ecb874c4-c952-4660-a99b-36a642fbab5a",
       "name": "Get one Organized Readable Rule"
@@ -191,8 +138,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        1936
+        -1072,
+        -1824
       ],
       "id": "eda0f892-1806-4aa4-a690-a2b6fd76a950",
       "name": "Convert to Natural Language Rule"
@@ -211,8 +158,8 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.3,
       "position": [
-        1152,
-        1936
+        -880,
+        -1824
       ],
       "id": "85ebdd6f-0bef-4c03-8a7c-ea32ec7667e7",
       "name": "Rules-Engine Vectorstore",
@@ -231,8 +178,8 @@
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1.1,
       "position": [
-        1296,
-        2144
+        -736,
+        -1616
       ],
       "id": "ff0d2f84-62aa-4d9c-8452-34e6c64b5176",
       "name": "Load Natural Language Rule"
@@ -244,8 +191,8 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
       "typeVersion": 1,
       "position": [
-        1376,
-        2288
+        -656,
+        -1472
       ],
       "id": "c70ef6f9-ce9a-4cc2-b15b-bb8802f2fc04",
       "name": "Biggest Token Chunk Size"
@@ -257,8 +204,8 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        736,
-        1728
+        -1296,
+        -2032
       ],
       "id": "ebea619d-76ec-416c-967b-c5659f1de34d",
       "name": "ECHO DONE. IN N8N BASH"
@@ -270,8 +217,8 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        1104,
-        2288
+        -928,
+        -1472
       ],
       "id": "7131fc6c-c31d-4f68-bfe4-06eb138c9469",
       "name": "embeddinggemma:300m (2)",
@@ -310,7 +257,7 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -1920,
+        -2096,
         304
       ],
       "id": "e9a5ab20-ff2c-4494-9e22-4f71ab48d68f",
@@ -388,8 +335,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        272,
-        1920
+        -1760,
+        -1840
       ],
       "id": "90cc9daf-b38f-41e4-bc26-90382cbc0497",
       "name": "Create Dense+Sparse Content from JSON objects"
@@ -406,7 +353,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2096,
+        -2272,
         304
       ],
       "id": "76bf154e-5fdb-4e38-874d-3d7c82ce3822",
@@ -472,12 +419,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const webhookData = $('Webhook1').first().json.body || $('Webhook1').first().json;\n\n// Generate thread_id if not provided or invalid\nconst threadId = webhookData.thread_id && \n                 webhookData.thread_id !== '' && \n                 webhookData.thread_id !== 'null' && \n                 webhookData.thread_id !== null\n                 ? webhookData.thread_id\n                 : `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n\n// Check if this is a new thread\nconst isNewThread = !webhookData.thread_id || \n                    webhookData.thread_id === '' || \n                    webhookData.thread_id === 'null' || \n                    webhookData.thread_id === null;\n\n// Check if file is attached (backend sets this param)\nconst hasFile = webhookData.has_file === true || webhookData.has_file === 'true';\n\nreturn {\n  json: {\n    thread_id: threadId,\n    is_new_thread: isNewThread,\n    has_file: hasFile,\n    user_message: webhookData.message || '',\n    // Pass through the entire webhook data for access to file data if needed\n    webhook_data: webhookData\n  }\n};"
+        "jsCode": "const webhookData = $('Webhook1').first().json.body || $('Webhook1').first().json;\n\n// Generate thread_id if not provided or invalid\nconst threadId = webhookData.thread_id && \n                 webhookData.thread_id !== '' && \n                 webhookData.thread_id !== 'null' && \n                 webhookData.thread_id !== null\n                 ? webhookData.thread_id\n                 : `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n\n// Check if this is a new thread\nconst isNewThread = !webhookData.thread_id || \n                    webhookData.thread_id === '' || \n                    webhookData.thread_id === 'null' || \n                    webhookData.thread_id === null;\n\n// Check if file is attached (backend sets this param)\nconst hasFile = webhookData.has_file === true || webhookData.has_file === 'true';\n\n// Check if MCP is enabled (backend sets this param)\nconst mcpIsOn = webhookData.mcp_is_on === true || webhookData.mcp_is_on === 'true';\n\nreturn {\n  json: {\n    thread_id: threadId,\n    is_new_thread: isNewThread,\n    has_file: hasFile,\n    mcp_is_on: mcpIsOn,\n    user_message: webhookData.message || '',\n    // Pass through the entire webhook data for access to file data if needed\n    webhook_data: webhookData\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1536,
+        -1712,
         304
       ],
       "id": "bfa61b69-772f-4c3f-9e88-dca9e4ca695d",
@@ -512,7 +459,7 @@
       "typeVersion": 2.2,
       "position": [
         -992,
-        320
+        336
       ],
       "id": "50de6850-fc1b-42c1-a4cb-d8c84d07d198",
       "name": "IF: is new thread ?"
@@ -526,7 +473,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -1744,
+        -1920,
         304
       ],
       "id": "3f57a525-b25e-4660-aa66-3a12a4b4fc0e",
@@ -588,293 +535,10 @@
       "typeVersion": 2.2,
       "position": [
         -1264,
-        304
+        320
       ],
       "id": "0c6df55b-1c05-44d5-b8eb-e20342fd37c6",
       "name": "IF: has a file ?"
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "claims-agent",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        1024,
-        -624
-      ],
-      "id": "b93f6b84-2858-48e1-9c04-80187f898289",
-      "name": "Webhook2",
-      "webhookId": "98d38ad8-97c3-40ca-84c3-499de69d8fee"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.4,
-      "position": [
-        2160,
-        -624
-      ],
-      "id": "8bdbeb1c-6d65-4a16-9104-b6d61ce4a837",
-      "name": "Respond to Webhook2"
-    },
-    {
-      "parameters": {
-        "model": "openai/gpt-oss-120b",
-        "options": {
-          "temperature": 0
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
-      "typeVersion": 1,
-      "position": [
-        1536,
-        -368
-      ],
-      "id": "679837d6-674b-4b1a-929d-dd6498851c35",
-      "name": "GPT OSS 20B1",
-      "credentials": {
-        "groqApi": {
-          "id": "pAwckXPf9euftlt9",
-          "name": "Groq account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "endpointUrl": "http://claims-rec-mcp:7711/mcp",
-        "options": {
-          "timeout": 60000
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
-      "typeVersion": 1.2,
-      "position": [
-        1920,
-        -368
-      ],
-      "id": "0eb134e8-5629-4325-8d17-e703896e5ab4",
-      "name": "Claims Rec – MCP Client1"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "57fdae2a-3297-4fe5-a548-39c3c1544d80",
-              "name": "chatInput",
-              "value": "={{ $json.body.message }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1328,
-        -624
-      ],
-      "id": "77dc3905-f2b3-4120-a846-ffbaf6c63575",
-      "name": "Clean up Payload1"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $json.chatInput }}",
-        "options": {
-          "systemMessage": "You are a helpful and friendly assistant working for the Zanzibar Health Services Fund (ZHSF).\nYour role is to support staff by helping them quickly check claim details, claim status, recent claims, patient claims, and by assisting in approving or rejecting claims using the available tools.\nAlways explain things simply, avoid technical language, and guide users gently.\nIf a tool can answer their request, call it.\nBe polite, supportive, and make the workflow easy for the user."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3,
-      "position": [
-        1632,
-        -624
-      ],
-      "id": "1abf192b-8344-44d8-bf01-909ece940418",
-      "name": "AI Agent - Claims Rec1"
-    },
-    {
-      "parameters": {
-        "fileSelector": "/home/external/medical-rules.xlsx",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1,
-      "position": [
-        1184,
-        -1216
-      ],
-      "id": "99866690-332d-448e-98de-9d3a149bfa09",
-      "name": "Pull Rules Engine Excel file1"
-    },
-    {
-      "parameters": {
-        "operation": "xlsx",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.extractFromFile",
-      "typeVersion": 1.1,
-      "position": [
-        1392,
-        -1216
-      ],
-      "id": "a86bb680-ee94-4a49-a514-c1f42db366ec",
-      "name": "Convert excel to JSON1"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [
-        1840,
-        -1216
-      ],
-      "id": "d9668f71-a389-4c56-b094-f5ab90c11971",
-      "name": "Loop Over Rules1"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "4e86f57d-755a-4de7-92d7-13ec1d4d01fe",
-              "name": "combinedContent",
-              "value": "={{ $json.combinedContent }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        2064,
-        -1200
-      ],
-      "id": "3141b70f-19c6-4376-9b63-e3f29b83a262",
-      "name": "Get one Organized Readable Rule1"
-    },
-    {
-      "parameters": {
-        "jsCode": "const myJSON = JSON.stringify($input.first().json.combinedContent);\nconst dataz = {\"data\": myJSON};\nreturn dataz;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2288,
-        -1200
-      ],
-      "id": "e541aab5-d4a1-402f-b31b-6668237f729e",
-      "name": "Convert to Natural Language Rule1"
-    },
-    {
-      "parameters": {
-        "mode": "insert",
-        "qdrantCollection": {
-          "__rl": true,
-          "value": "rules-engine",
-          "mode": "list"
-        },
-        "embeddingBatchSize": 1,
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
-      "typeVersion": 1.3,
-      "position": [
-        2480,
-        -1200
-      ],
-      "id": "e8a070db-4917-482c-ae28-2077001d705c",
-      "name": "Rules-Engine Vectorstore1",
-      "credentials": {
-        "qdrantApi": {
-          "id": "9g9FVeOFvcZvztrb",
-          "name": "QdrantApi account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "textSplittingMode": "custom",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
-      "typeVersion": 1.1,
-      "position": [
-        2624,
-        -992
-      ],
-      "id": "b2b5b950-5816-4cbf-84ce-f3e33fda999d",
-      "name": "Load Natural Language Rule1"
-    },
-    {
-      "parameters": {
-        "chunkSize": 500000
-      },
-      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
-      "typeVersion": 1,
-      "position": [
-        2704,
-        -848
-      ],
-      "id": "7250be35-f805-4da7-b0e9-4316bc7d2772",
-      "name": "Biggest Token Chunk Size1"
-    },
-    {
-      "parameters": {
-        "command": "echo \"done\""
-      },
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
-      "position": [
-        2064,
-        -1408
-      ],
-      "id": "3c6aea64-5839-4f1a-af7c-6472e19f8289",
-      "name": "ECHO DONE. IN N8N BASH1"
-    },
-    {
-      "parameters": {
-        "model": "embeddinggemma:300m"
-      },
-      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
-      "typeVersion": 1,
-      "position": [
-        2432,
-        -848
-      ],
-      "id": "19be6bef-1f09-4da4-ae07-62d957c87b8f",
-      "name": "embeddinggemma:300m (2)1",
-      "credentials": {
-        "ollamaApi": {
-          "id": "Ioik0GQDygB82fN6",
-          "name": "Ollama account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "for (const item of $input.all()) {\n  const data = item.json;\n  \n  const denseText = [\n    `Surgical Procedure: ${data['Surgical Procedure'] || 'N/A'}.`,\n    data['Major/Minor'] ? `Classification: ${data['Major/Minor']} procedure.` : '',\n    data['M/F'] && data['M/F'] !== 'ALL' ? `Gender: ${data['M/F']}.` : 'Applicable to all genders.',\n    data['Age'] && data['Age'] !== 'ALL' ? `Age requirement: ${data['Age']}.` : 'No age restriction.',\n    data['Prior Authorization'] === 'YES' ? 'Prior authorization is required.' : \n    data['Prior Authorization'] === 'NO' ? 'No prior authorization needed.' : '',\n    data['Hospitalization days'] && data['Hospitalization days'] !== 'NO' && data['Hospitalization days'] !== 'NULL' ? \n      `Requires ${data['Hospitalization days']} days of hospitalization.` : \n    data['Hospitalization days'] === 'YES' ? 'Hospitalization is required.' :\n    data['Hospitalization days'] === 'NO' ? 'No hospitalization required.' : '',\n    data['Additional Days Approved'] && data['Additional Days Approved'] !== 'NO' && data['Additional Days Approved'] !== 'NULL' ? \n      `${data['Additional Days Approved']} additional days approved.` : '',\n    data['Hospital level'] ? `Available at: ${data['Hospital level']}.` : '',\n    data['Registered Specialized'] ? `Performed by: ${data['Registered Specialized']}.` : ''\n  ].filter(text => text).join(' ');\n  \n  const sparseKeywords = [\n    data['Surgical Procedure'],\n    data['Major/Minor'],\n    data['M/F'],\n    data['Age'],\n    data['Prior Authorization'] === 'YES' ? 'authorization required' : 'no authorization',\n    data['Hospitalization days'] === 'YES' || (data['Hospitalization days'] && data['Hospitalization days'] !== 'NO' && data['Hospitalization days'] !== 'NULL') ? 'hospitalization inpatient' : 'outpatient',\n    data['Hospital level'] ? data['Hospital level'].split('/').join(' ') : '',\n    data['Registered Specialized'] ? data['Registered Specialized'].split('/').join(' ') : '',\n    'dental surgery procedure medical treatment'\n  ].filter(kw => kw && kw !== 'NULL' && kw !== 'ALL').join(' ');\n  \n  item.json.denseContent = denseText;\n  item.json.sparseContent = sparseKeywords;\n  item.json.combinedContent = `${denseText} ${sparseKeywords}`;\n}\n\nreturn $input.all();"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1600,
-        -1216
-      ],
-      "id": "3a994cd5-862a-45cc-be1f-64d8fc0fe000",
-      "name": "Create Dense+Sparse Content from JSON objects1"
     },
     {
       "parameters": {
@@ -892,7 +556,7 @@
       "typeVersion": 1.3,
       "position": [
         176,
-        560
+        576
       ],
       "id": "ca196760-f469-426c-849a-99f61b521d50",
       "name": "Retrieve Compatible Rules4",
@@ -915,7 +579,7 @@
       "typeVersion": 3,
       "position": [
         -48,
-        272
+        288
       ],
       "id": "25ddc8f2-957d-4e09-bc2f-7bdc561bb3a0",
       "name": "Rules Engine AI Agent4"
@@ -928,7 +592,7 @@
       "typeVersion": 1,
       "position": [
         272,
-        704
+        720
       ],
       "id": "ec982641-6047-4b76-abd8-2d7335d5395a",
       "name": "embeddinggemma:300m (1)4",
@@ -948,7 +612,7 @@
       "typeVersion": 1,
       "position": [
         -160,
-        560
+        576
       ],
       "id": "9bdce607-28ea-4146-9d32-de2327d12964",
       "name": "Groq Chat Model6",
@@ -969,7 +633,7 @@
       "typeVersion": 2.6,
       "position": [
         -496,
-        272
+        288
       ],
       "id": "ec048da4-64a6-45f9-9da3-72cc060a1d44",
       "name": "SQL: Fetch Messages",
@@ -990,7 +654,7 @@
       "typeVersion": 2.6,
       "position": [
         304,
-        272
+        288
       ],
       "id": "8c1b2f7d-d48d-4f79-80ab-4b0341e9e5dd",
       "name": "SQL: Save AI Message",
@@ -1011,7 +675,7 @@
       "typeVersion": 1.4,
       "position": [
         736,
-        272
+        288
       ],
       "id": "b4d9aecf-4b44-45d7-a69b-2f8abf94a1f1",
       "name": "Respond to Webhook1"
@@ -1026,7 +690,7 @@
       "typeVersion": 2.6,
       "position": [
         -736,
-        416
+        432
       ],
       "id": "2ede3e2d-b283-45f2-bad8-5247de59e586",
       "name": "SQL: Insert msg to existing Thread",
@@ -1045,7 +709,7 @@
       "typeVersion": 2,
       "position": [
         -272,
-        272
+        288
       ],
       "id": "b5c8e0d2-6c4e-4e7e-b012-2f2893f2c9e2",
       "name": "Format/ Prepare Thread Msgs"
@@ -1059,8 +723,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2112,
-        816
+        -2272,
+        784
       ],
       "id": "f272e945-7db4-4b6b-8f5c-09b2004501d0",
       "name": "Webhook3",
@@ -1075,8 +739,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -1696,
-        816
+        -1856,
+        784
       ],
       "id": "8de9cf06-b5bb-4b9c-ad13-c3049959aeca",
       "name": "Respond to Webhook3"
@@ -1090,8 +754,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -1904,
-        816
+        -2064,
+        784
       ],
       "id": "40785255-336c-4490-9787-08968a58d18a",
       "name": "SQL: Fetch Threads",
@@ -1111,8 +775,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2112,
-        1120
+        -2272,
+        1088
       ],
       "id": "79aa2ed3-f70d-4e07-9072-02b6a3f9e89a",
       "name": "Webhook4",
@@ -1127,8 +791,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -1888,
-        1120
+        -2048,
+        1088
       ],
       "id": "236acb98-2fd9-4983-94d1-8ccee8cc99bd",
       "name": "Execute a SQL query",
@@ -1147,8 +811,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        -1680,
-        1120
+        -1840,
+        1088
       ],
       "id": "587bdb46-add9-47a1-94cc-d2be75197b0c",
       "name": "Respond to Webhook4"
@@ -1320,25 +984,207 @@
       "typeVersion": 2,
       "position": [
         496,
-        272
+        288
       ],
       "id": "5c1ae6ee-65c9-4a4f-be7e-aab36b561c06",
       "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7b84c0e8-9e9f-402f-a619-595116fea7e7",
+              "leftValue": "={{ $json.mcp_is_on }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1536,
+        304
+      ],
+      "id": "a7d19818-b27f-41e3-953d-bc05e4c453fb",
+      "name": "IF: MCP is on?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -800,
+        -1104
+      ],
+      "id": "c7d34e91-5e5e-4a45-a597-0a4d49b3981b",
+      "name": "SQL: Create New Thread/ User Message2",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT message_id, role, content, created_at \nFROM messages \nWHERE thread_id = '{{ $json.thread_id }}'\nORDER BY created_at ASC\nLIMIT 7;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -560,
+        -1008
+      ],
+      "id": "aa09e15e-c708-4504-9caf-ea1044142608",
+      "name": "SQL: Fetch Messages2",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Optional: update thread's updated_at timestamp\nUPDATE threads\nSET updated_at = NOW()\nWHERE thread_id = '{{ $('Code in JavaScript').item.json.thread_id }}';\n\n-- Insert the new user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -800,
+        -864
+      ],
+      "id": "0cce7350-e5e3-474c-9115-cf067d4de4d5",
+      "name": "SQL: Insert msg to existing Thread2",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all history messages from Postgres\nconst historyItems = $input.all();\n\n// Get thread data from Thread ID Handler (text only, no binary)\nconst threadHandler = $('Code in JavaScript').first().json;\nconst threadId = threadHandler.thread_id;\nconst userMessage = threadHandler.user_message;\n\n// Format conversation history as readable text\nlet conversationHistory = '';\n\nif (historyItems.length > 0) {\n  conversationHistory = historyItems.map(item => {\n    const role = item.json.role === 'user' ? 'Human' : 'Assistant';\n    const content = item.json.content;\n    return `${role}: ${content}`;\n  }).join('\\n\\n');\n} else {\n  conversationHistory = 'This is the start of the conversation.';\n}\n\n// Create messages array format (for alternative use)\nconst messagesArray = historyItems.map(item => ({\n  role: item.json.role,\n  content: item.json.content\n}));\n\n// Return formatted data (NO binary data)\nreturn {\n  json: {\n    thread_id: threadId,\n    user_message: userMessage,\n    conversation_history: conversationHistory,\n    messages_array: messagesArray,\n    total_messages: historyItems.length\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        -1008
+      ],
+      "id": "8d6537a7-4713-45f9-9aa0-ef750c3849c5",
+      "name": "Format/ Prepare Thread Msgs2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "096b5129-dc97-4da5-8f53-666cbc148e9a",
+              "leftValue": "={{ $json.is_new_thread }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1072,
+        -976
+      ],
+      "id": "6bd994d7-38cc-4068-b3c1-00d94e0ba399",
+      "name": "IF: is new thread ?2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Format/ Prepare Thread Msgs2').item.json.thread_id }}',\n  'assistant',\n  '{{ $json.output }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        304,
+        -1008
+      ],
+      "id": "338d8a94-8b51-4a48-90ba-7e6a1464cfc9",
+      "name": "SQL: Save AI Message2",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        736,
+        -1008
+      ],
+      "id": "1102eb11-e456-43a6-bcbb-05b261d3b74c",
+      "name": "Respond to Webhook6"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ \n  json: { \n    \"response\": $input.first().json.content,\n    \"thread_id\": $input.first().json.thread_id\n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -1008
+      ],
+      "id": "579aecfe-26f9-44c7-affd-123c9e147345",
+      "name": "Code in JavaScript3"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Clean up Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "GPT OSS 20B": {
       "ai_languageModel": [
         [
@@ -1361,22 +1207,11 @@
         ]
       ]
     },
-    "Clean up Payload": {
-      "main": [
-        [
-          {
-            "node": "AI Agent - Claims Rec",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "AI Agent - Claims Rec": {
       "main": [
         [
           {
-            "node": "Respond to Webhook",
+            "node": "SQL: Save AI Message2",
             "type": "main",
             "index": 0
           }
@@ -1603,7 +1438,7 @@
       "main": [
         [
           {
-            "node": "IF: has a file ?",
+            "node": "IF: MCP is on?",
             "type": "main",
             "index": 0
           }
@@ -1662,178 +1497,6 @@
         [
           {
             "node": "SQL: Fetch Messages",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook2": {
-      "main": [
-        [
-          {
-            "node": "Clean up Payload1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "GPT OSS 20B1": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Agent - Claims Rec1",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Claims Rec – MCP Client1": {
-      "ai_tool": [
-        [
-          {
-            "node": "AI Agent - Claims Rec1",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Clean up Payload1": {
-      "main": [
-        [
-          {
-            "node": "AI Agent - Claims Rec1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AI Agent - Claims Rec1": {
-      "main": [
-        [
-          {
-            "node": "Respond to Webhook2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Pull Rules Engine Excel file1": {
-      "main": [
-        [
-          {
-            "node": "Convert excel to JSON1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Convert excel to JSON1": {
-      "main": [
-        [
-          {
-            "node": "Create Dense+Sparse Content from JSON objects1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Over Rules1": {
-      "main": [
-        [
-          {
-            "node": "ECHO DONE. IN N8N BASH1",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Get one Organized Readable Rule1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get one Organized Readable Rule1": {
-      "main": [
-        [
-          {
-            "node": "Convert to Natural Language Rule1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Convert to Natural Language Rule1": {
-      "main": [
-        [
-          {
-            "node": "Rules-Engine Vectorstore1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Rules-Engine Vectorstore1": {
-      "main": [
-        [
-          {
-            "node": "Loop Over Rules1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Load Natural Language Rule1": {
-      "ai_document": [
-        [
-          {
-            "node": "Rules-Engine Vectorstore1",
-            "type": "ai_document",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Biggest Token Chunk Size1": {
-      "ai_textSplitter": [
-        [
-          {
-            "node": "Load Natural Language Rule1",
-            "type": "ai_textSplitter",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "embeddinggemma:300m (2)1": {
-      "ai_embedding": [
-        [
-          {
-            "node": "Rules-Engine Vectorstore1",
-            "type": "ai_embedding",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create Dense+Sparse Content from JSON objects1": {
-      "main": [
-        [
-          {
-            "node": "Loop Over Rules1",
             "type": "main",
             "index": 0
           }
@@ -2082,13 +1745,115 @@
           }
         ]
       ]
+    },
+    "SQL: Create New Thread/ User Message2": {
+      "main": [
+        [
+          {
+            "node": "SQL: Fetch Messages2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Fetch Messages2": {
+      "main": [
+        [
+          {
+            "node": "Format/ Prepare Thread Msgs2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Insert msg to existing Thread2": {
+      "main": [
+        [
+          {
+            "node": "SQL: Fetch Messages2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: MCP is on?": {
+      "main": [
+        [
+          {
+            "node": "IF: is new thread ?2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: has a file ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: is new thread ?2": {
+      "main": [
+        [
+          {
+            "node": "SQL: Create New Thread/ User Message2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL: Insert msg to existing Thread2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format/ Prepare Thread Msgs2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Claims Rec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Save AI Message2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "cfb46a0c-81e4-48e6-9913-427cb3d2f2b0",
+  "versionId": "49d2f777-739f-41c6-81f4-511ca3e20782",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b9434c6dfefdabca09fc57ee2f0dce8039d2dd5c888f0d629b5404390b1ef2c1"

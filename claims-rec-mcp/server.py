@@ -1,14 +1,32 @@
 from fastmcp import FastMCP
 import json
 from db import execute_query, execute_update, close_connection
-from typing import Optional
+from typing import Optional, List
 
 mcp = FastMCP("Claims Recommendation MCP")
 
-HIDDEN_ARGS = ["chatInput", "toolCallId"]
+# Add all n8n injected arguments here to hide them from the AI tool definition
+HIDDEN_ARGS = [
+    "chatInput", 
+    "toolCallId", 
+    "thread_id", 
+    "user_message", 
+    "conversation_history", 
+    "messages_array", 
+    "total_messages"
+]
 
 @mcp.tool(exclude_args=HIDDEN_ARGS)
-def list_recent_claims(limit: int = 5, chatInput: str = None, toolCallId: str = None) -> str:
+def list_recent_claims(
+    limit: int = 5, 
+    chatInput: str = None, 
+    toolCallId: str = None,
+    thread_id: str = None,
+    user_message: str = None,
+    conversation_history: str = None,
+    messages_array: list = None,
+    total_messages: int = None
+) -> str:
     """
     List the most recent claims (1-5 claims).
     
@@ -59,7 +77,17 @@ def list_recent_claims(limit: int = 5, chatInput: str = None, toolCallId: str = 
 
 
 @mcp.tool(exclude_args=HIDDEN_ARGS)
-def list_old_pending_claims(limit: int = 10, days_old: int = 30, chatInput: str = None, toolCallId: str = None) -> str:
+def list_old_pending_claims(
+    limit: int = 10, 
+    days_old: int = 30, 
+    chatInput: str = None, 
+    toolCallId: str = None,
+    thread_id: str = None,
+    user_message: str = None,
+    conversation_history: str = None,
+    messages_array: list = None,
+    total_messages: int = None
+) -> str:
     """
     List old pending claims that have been in pending status for a specified number of days.
     
@@ -122,7 +150,18 @@ def list_old_pending_claims(limit: int = 10, days_old: int = 30, chatInput: str 
 
 
 @mcp.tool(exclude_args=HIDDEN_ARGS)
-def list_claims_by_status(status: str, limit: int = 10, days_old: int = 0, chatInput: str = None, toolCallId: str = None) -> str:
+def list_claims_by_status(
+    status: str, 
+    limit: int = 10, 
+    days_old: int = 0, 
+    chatInput: str = None, 
+    toolCallId: str = None,
+    thread_id: str = None,
+    user_message: str = None,
+    conversation_history: str = None,
+    messages_array: list = None,
+    total_messages: int = None
+) -> str:
     """
     List claims filtered by status (Approved, Rejected, or Pending), optionally older than specified days.
     
@@ -196,7 +235,16 @@ def list_claims_by_status(status: str, limit: int = 10, days_old: int = 0, chatI
 
 
 @mcp.tool(exclude_args=HIDDEN_ARGS)
-def get_claim_by_number(claim_number: str, chatInput: str = None, toolCallId: str = None) -> str:
+def get_claim_by_number(
+    claim_number: str, 
+    chatInput: str = None, 
+    toolCallId: str = None,
+    thread_id: str = None,
+    user_message: str = None,
+    conversation_history: str = None,
+    messages_array: list = None,
+    total_messages: int = None
+) -> str:
     """
     Get detailed information about a specific claim using claim number.
     
@@ -322,7 +370,16 @@ def get_claim_by_number(claim_number: str, chatInput: str = None, toolCallId: st
 
 
 @mcp.tool(exclude_args=HIDDEN_ARGS)
-def get_claim_by_patient_id(patient_id: str, chatInput: str = None, toolCallId: str = None) -> str:
+def get_claim_by_patient_id(
+    patient_id: str, 
+    chatInput: str = None, 
+    toolCallId: str = None,
+    thread_id: str = None,
+    user_message: str = None,
+    conversation_history: str = None,
+    messages_array: list = None,
+    total_messages: int = None
+) -> str:
     """
     Get detailed information about claims for a specific patient using patient ID.
     
@@ -449,7 +506,16 @@ def get_claim_by_patient_id(patient_id: str, chatInput: str = None, toolCallId: 
 
 
 @mcp.tool(exclude_args=HIDDEN_ARGS)
-def check_claim_status(claim_number: str, chatInput: str = None, toolCallId: str = None) -> str:
+def check_claim_status(
+    claim_number: str, 
+    chatInput: str = None, 
+    toolCallId: str = None,
+    thread_id: str = None,
+    user_message: str = None,
+    conversation_history: str = None,
+    messages_array: list = None,
+    total_messages: int = None
+) -> str:
     """
     Check the current status of a claim (Approved, Rejected, or Pending).
     
@@ -512,7 +578,18 @@ def check_claim_status(claim_number: str, chatInput: str = None, toolCallId: str
 
 
 @mcp.tool(exclude_args=HIDDEN_ARGS)
-def approve_claim(claim_number: str, reviewed_by: str = "", notes: str = "", chatInput: str = None, toolCallId: str = None) -> str:
+def approve_claim(
+    claim_number: str, 
+    reviewed_by: str = "", 
+    notes: str = "", 
+    chatInput: str = None, 
+    toolCallId: str = None,
+    thread_id: str = None,
+    user_message: str = None,
+    conversation_history: str = None,
+    messages_array: list = None,
+    total_messages: int = None
+) -> str:
     """
     Approve a claim and update its status to 'Approved'.
     
@@ -525,7 +602,18 @@ def approve_claim(claim_number: str, reviewed_by: str = "", notes: str = "", cha
 
 
 @mcp.tool(exclude_args=HIDDEN_ARGS)
-def reject_claim(claim_number: str, reviewed_by: str = "", notes: str = "", chatInput: str = None, toolCallId: str = None) -> str:
+def reject_claim(
+    claim_number: str, 
+    reviewed_by: str = "", 
+    notes: str = "", 
+    chatInput: str = None, 
+    toolCallId: str = None,
+    thread_id: str = None,
+    user_message: str = None,
+    conversation_history: str = None,
+    messages_array: list = None,
+    total_messages: int = None
+) -> str:
     """
     Reject a claim and update its status to 'Rejected'.
     

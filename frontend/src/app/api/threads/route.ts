@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const n8nResponse = await fetch('http://172.18.0.11:5678/webhook/threads', {
+    const n8nResponse = await fetch('http://n8n:5678/webhook/threads', {
       method: 'GET',
     });
 

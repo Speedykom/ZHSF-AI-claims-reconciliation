@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const n8nUrl = `http://172.18.0.11:5678/webhook/messages?thread_id=${encodeURIComponent(threadId)}`;
+    const n8nUrl = `http://n8n:5678/webhook/messages?thread_id=${encodeURIComponent(threadId)}`;
 
     const n8nResponse = await fetch(n8nUrl, {
       method: 'GET',

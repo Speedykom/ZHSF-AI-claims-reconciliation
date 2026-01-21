@@ -54,6 +54,7 @@ services:
     ports:
       - "5678:5678"
     environment:
+      N8N_FEATURE_FLAG_MCP: 'true'
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: n8n-postgres
       DB_POSTGRESDB_PORT: 5432
@@ -631,6 +632,8 @@ services:
     container_name: claims-rec-mcp
     ports:
       - "7711:7711"
+    volumes:
+      - ./claims-rec-mcp:/app
     environment:
       TEST_DB: ${TEST_DB}
       TEST_DB_USER: ${TEST_DB_USER}

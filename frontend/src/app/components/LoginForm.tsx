@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import FormHeader from './FormHeader';
 import EmailInput from './EmailInput';
@@ -11,6 +12,9 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ showPassword, onTogglePassword }) => {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
   const fadeUpVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: {
@@ -20,6 +24,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ showPassword, onTogglePassword })
         duration: 0.5
       }
     }
+  };
+
+  const handleLogin = () => {
+    setLoading(true);
+    setTimeout(() => {
+      router.push('/chat');
+    }, 2000);
   };
 
   return (
@@ -34,7 +45,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ showPassword, onTogglePassword })
         <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
           <EmailInput />
           <PasswordInput showPassword={showPassword} onToggle={onTogglePassword} />
-          <LoginButton />
+          <LoginButton loading={loading} onClick={handleLogin} />
         </form>
       </motion.div>
     </div>
