@@ -24,3 +24,4 @@ Thumbs.db
 temp/
 .dockerignore
 supabase/volumes/**
+paddlex_models
