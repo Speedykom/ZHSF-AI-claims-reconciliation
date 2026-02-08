@@ -55,27 +55,39 @@ services:
     ports:
       - "5678:5678"
     environment:
-      N8N_FEATURE_FLAG_MCP: 'true'
-      DB_TYPE: postgresdb
-      DB_POSTGRESDB_HOST: n8n-postgres
-      DB_POSTGRESDB_PORT: 5432
-      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME}
-      DB_POSTGRESDB_USER: ${N8N_DB_USER}
-      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
-      GENERIC_TIMEZONE: Europe/Berlin
-      TZ: Europe/Berlin
-      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'true'
-      N8N_RUNNERS_ENABLED: 'true'
-      N8N_HOST: 0.0.0.0
-      N8N_PORT: 5678
-      N8N_PROTOCOL: http
-      NODE_ENV: production
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=n8n-postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME}
+      - DB_POSTGRESDB_USER=${N8N_DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
+      - N8N_HOST=0.0.0.0
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_PUBLIC_API_DISABLED=false
     volumes:
       - n8n_data:/home/node/.n8n
       - ./n8n:/home/external:rw
     depends_on:
       n8n-postgres:
         condition: service_healthy
+    entrypoint: []
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "starting programmatic initialization..."
+        
+        echo "importing Credentials..."
+        n8n import:credentials --input=/home/external/credentials.json
+        
+        echo "importing Workflow..."
+        n8n import:workflow --input=/home/external/RAG-OCR-workflow.json
+        
+        echo "initialization complete, launching n8n..."
+        exec n8n start
     networks:
       - tanzania-network
 
@@ -212,3 +224,4 @@ volumes:
 networks:
   tanzania-network:
     driver: bridge
+    
