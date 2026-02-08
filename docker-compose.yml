@@ -14,6 +14,7 @@ services:
       POSTGRES_PASSWORD: n8n
     volumes:
       - n8n_postgres-data:/var/lib/postgresql/data
+      - ./n8n/init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U n8n -d n8n"]
       interval: 5s
@@ -117,6 +118,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
       - NEXT_PUBLIC_SUPABASE_URL=http://kong:8000
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
@@ -169,7 +171,33 @@ services:
     networks:
       - tanzania-network
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.6
+    container_name: keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: n8n-postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+    command: 
+      - start-dev
+      - --import-realm
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
+    networks:
+      - tanzania-network
+    depends_on:
+      - n8n-postgres
+    restart: unless-stopped
+
 volumes:
+  keycloak_data:
   n8n_data:
   n8n_postgres-data:
   qdrant_data:
