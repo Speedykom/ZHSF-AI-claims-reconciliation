@@ -1,9 +1,10 @@
 import AIChatInterface from "../main";
+import ProtectedRoute from "../components/ProtectedRoute";
 
-export default function ChatRoute() {
-return (
-    <div>
-        <AIChatInterface />
-    </div>
-)
+export default function ChatPage() {
+  return (
+    <ProtectedRoute>
+      <AIChatInterface />
+    </ProtectedRoute>
+  );
 }
