@@ -1,0 +1,69 @@
+{
+  "id": "ZHSF-Claims-Rec",
+  "realm": "ZHSF-Claims-Rec",
+  "displayName": "ZHSF Claims Reconciliation",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "user",
+        "description": "Standard user role"
+      },
+      {
+        "name": "admin",
+        "description": "Administrator role"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "${KEYCLOAK_REALM_ADMIN_USER}",
+      "enabled": true,
+      "email": "${KEYCLOAK_REALM_ADMIN_EMAIL}",
+      "emailVerified": true,
+      "firstName": "ZHSF",
+      "lastName": "Administrator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_REALM_ADMIN_PASSWORD}"
+        }
+      ],
+      "realmRoles": ["admin", "user"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "frontend-app",
+      "name": "Frontend Application",
+      "description": "Next.js frontend application",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": [
+        "${KEYCLOAK_FRONTEND_REDIRECT_URI_1}",
+        "${KEYCLOAK_FRONTEND_REDIRECT_URI_2}"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "frontchannelLogout": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": ["profile", "email", "roles"],
+      "fullScopeAllowed": true
+    }
+  ]
+}
