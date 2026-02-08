@@ -25,3 +25,4 @@ temp/
 .dockerignore
 supabase/volumes/**
 paddlex_models
+n8n/credentials.json
