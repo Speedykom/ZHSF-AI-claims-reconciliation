@@ -1,25 +1,70 @@
-This is the [assistant-ui](https://github.com/Yonom/assistant-ui) starter project.
+# Frontend (Claims Review UI)
 
-## Getting Started
+This frontend provides a user interface for reviewing reconciliation results, exceptions, and audit data.
 
-First, add your OpenAI API key to `.env.local` file:
+---
 
-```
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
+## 1) Prerequisites
+- Node.js 18+
+- npm / yarn / pnpm / bun
 
-Then, run the development server:
+---
+
+## 2) Setup
+
+1. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
+   # or
+   bun install
+   ```
+
+2. Configure environment variables:
+   - Copy `.env.local.example` to `.env.local` (if present) or create `.env.local`.
+   - Add required keys (for example):
+     ```
+     OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+     ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   # or
+   pnpm dev
+   # or
+   bun dev
+   ```
+
+4. Open the app:
+   - http://localhost:3000
+
+---
+
+## 3) Common workflows
+
+- **Update UI text or layout** → edit `app/page.tsx`.
+- **Add new pages** → add files under `app/`.
+- **Connect to APIs** → use the Supabase REST/GraphQL endpoints or n8n webhook endpoints.
+
+---
+
+## 4) Build & production
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 5) Troubleshooting
+
+- If the page is blank, check your `.env.local` values.
+- If API calls fail, confirm the backend services are running.
+
