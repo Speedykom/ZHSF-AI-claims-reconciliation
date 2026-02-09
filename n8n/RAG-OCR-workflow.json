@@ -11,8 +11,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        -160,
-        -752
+        -144,
+        -1472
       ],
       "id": "717de2c0-c143-4eda-a7ae-0b30954b8e14",
       "name": "GPT OSS 20B",
@@ -33,8 +33,8 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1.2,
       "position": [
-        224,
-        -752
+        240,
+        -1472
       ],
       "id": "52948f69-cc37-4f7d-9e51-1638ab5a8f5e",
       "name": "Claims Rec – MCP Client"
@@ -42,7 +42,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $('Code in JavaScript').first().json.user_message }}\n",
+        "text": "==== CONVERSATION HISTORY ===\n{{ $json.conversation_history }}\n\n=== CURRENT USER MESSAGE ===\n{{ $('Code in JavaScript').first().json.user_message }}\n",
         "options": {
           "systemMessage": "# System Prompt for GPT-OSS 20B - Claims Recommendation MCP\n\nReasoning: medium\n\nYou are a healthcare claims assistant with access to a Claims Recommendation MCP server managing Tanzania healthcare insurance claims. Your role is to help users query and manage claims efficiently.\n\n## Core Instructions\n\n1. **Tool Usage Protocol**\n   - ONLY pass parameters explicitly defined in each tool's signature\n   - NEVER pass: `chatInput`, `toolCallId`, `thread_id`, `user_message`, `conversation_history`, `timestamp`, `session_id`\n   - Use default parameter values when user doesn't specify\n   - Call tools directly without asking permission\n\n2. **Response Style**\n   - Be concise and professional\n   - Lead with the most relevant information\n   - Use clear formatting for multiple claims\n   - Confirm before approving/rejecting claims\n\n## Available Tools\n\n**list_recent_claims** - Get 1-5 most recent claims\n- Parameters: `limit` (integer, 1-5, default: 5)\n\n**list_old_pending_claims** - Get pending claims by age\n- Parameters: `limit` (integer, 1-50, default: 10), `days_old` (integer, minimum: 1, default: 30)\n\n**list_claims_by_status** - Filter by status (Approved/Rejected/Pending)\n- Parameters: `status` (string: 'Approved'/'Rejected'/'Pending'), `limit` (integer, 1-50, default: 10), `days_old` (integer, default: 0)\n\n**get_claim_by_number** - Get full claim details by number\n- Parameters: `claim_number` (string, e.g., 'ZNB-2024-001')\n\n**get_claim_by_patient_id** - Get all claims for a patient\n- Parameters: `patient_id` (string, e.g., 'PAT-001')\n\n**check_claim_status** - Check current status of a claim\n- Parameters: `claim_number` (string)\n\n**approve_claim** - Approve a claim (status → 'Approved')\n- Parameters: `claim_number` (string, required), `reviewed_by` (string, optional), `notes` (string, optional)\n\n**reject_claim** - Reject a claim (status → 'Rejected')\n- Parameters: `claim_number` (string, required), `reviewed_by` (string, optional), `notes` (string, optional)\n\n## Decision Logic\n\n- \"latest claims\" → use `list_recent_claims`\n- \"pending for X days\" → use `list_old_pending_claims` with `days_old=X`\n- \"approved/rejected claims\" → use `list_claims_by_status`\n- claim number mentioned → use `get_claim_by_number` or `check_claim_status`\n- patient ID mentioned → use `get_claim_by_patient_id`\n- \"approve/reject claim\" → confirm details first, then use `approve_claim` or `reject_claim`\n\n## Data Context\n\nAll claims are from Tanzania's healthcare system. Claims include patient demographics, provider info, diagnoses, procedures, and financial details. Statuses: Pending, Approved, Rejected.\n\n## Error Handling\n\nIf a tool returns an error, explain clearly and suggest alternatives. Maintain professional tone."
         }
@@ -50,8 +50,8 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        -64,
-        -1008
+        -48,
+        -1728
       ],
       "id": "ba4b7f46-9489-407c-aebf-28b44f7d405a",
       "name": "AI Agent - Claims Rec"
@@ -64,8 +64,8 @@
       "type": "n8n-nodes-base.readWriteFile",
       "typeVersion": 1,
       "position": [
-        -2176,
-        -1840
+        -2096,
+        -2560
       ],
       "id": "19da0d96-abf9-4af1-83a6-e0f81ffa40c8",
       "name": "Pull Rules Engine Excel file"
@@ -75,8 +75,8 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        -2384,
-        -1840
+        -2304,
+        -2560
       ],
       "id": "3416a46d-e5de-4059-957f-f12716653780",
       "name": "RUN !"
@@ -89,8 +89,8 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -1968,
-        -1840
+        -1888,
+        -2560
       ],
       "id": "047e9e6d-2f26-405a-aee3-415812c8bfb8",
       "name": "Convert excel to JSON"
@@ -102,8 +102,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -1520,
-        -1840
+        -1440,
+        -2560
       ],
       "id": "37261219-428b-41e5-8699-81954cddde9e",
       "name": "Loop Over Rules"
@@ -125,8 +125,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -1296,
-        -1824
+        -1216,
+        -2544
       ],
       "id": "ecb874c4-c952-4660-a99b-36a642fbab5a",
       "name": "Get one Organized Readable Rule"
@@ -138,8 +138,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1072,
-        -1824
+        -992,
+        -2544
       ],
       "id": "eda0f892-1806-4aa4-a690-a2b6fd76a950",
       "name": "Convert to Natural Language Rule"
@@ -158,8 +158,8 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.3,
       "position": [
-        -880,
-        -1824
+        -800,
+        -2544
       ],
       "id": "85ebdd6f-0bef-4c03-8a7c-ea32ec7667e7",
       "name": "Rules-Engine Vectorstore",
@@ -178,8 +178,8 @@
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1.1,
       "position": [
-        -736,
-        -1616
+        -656,
+        -2336
       ],
       "id": "ff0d2f84-62aa-4d9c-8452-34e6c64b5176",
       "name": "Load Natural Language Rule"
@@ -191,8 +191,8 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
       "typeVersion": 1,
       "position": [
-        -656,
-        -1472
+        -576,
+        -2192
       ],
       "id": "c70ef6f9-ce9a-4cc2-b15b-bb8802f2fc04",
       "name": "Biggest Token Chunk Size"
@@ -204,8 +204,8 @@
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
       "position": [
-        -1296,
-        -2032
+        -1216,
+        -2752
       ],
       "id": "ebea619d-76ec-416c-967b-c5659f1de34d",
       "name": "ECHO DONE. IN N8N BASH"
@@ -217,8 +217,8 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -928,
-        -1472
+        -848,
+        -2192
       ],
       "id": "7131fc6c-c31d-4f68-bfe4-06eb138c9469",
       "name": "embeddinggemma:300m (2)",
@@ -241,8 +241,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -912,
-        -304
+        -528,
+        -608
       ],
       "id": "f49c458f-d2c5-4952-b599-46be27be8949",
       "name": "Extract Claim Info with Paddle OCR"
@@ -280,8 +280,8 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.3,
       "position": [
-        736,
-        -112
+        1296,
+        -80
       ],
       "id": "02922297-4ec5-4ed4-ac0f-b0d789ed15f3",
       "name": "Retrieve Compatible Rules",
@@ -297,14 +297,14 @@
         "promptType": "define",
         "text": "==== CONVERSATION HISTORY ===\n\n{{ $('Format/ Prepare Thread Msgs1').item.json.conversation_history }}\n\n=== CURRENT USER MESSAGE ===\n{{ $('Code in JavaScript').first().json.user_message }}\n\n\n```markdown\n{{ $json.text }}\n```",
         "options": {
-          "systemMessage": "You evaluate insurance claims using policy rules.\n\nRead the claim document and extract relevant facts.\nSearch the rules database using the Qdrant tool to find applicable rules.\nApply only the retrieved rules to the claim.\n\nDo not assume missing facts.\nDo not invent rules.\nIf no applicable rules are found, say so clearly.\n\nExplain your conclusion briefly."
+          "systemMessage": "You are an expert Medical Claims Auditor for ZHSF. You operate in two distinct modes based on the user's request.\n\n### OPERATING MODES:\n1. OCR/EXTRACTION MODE: Triggered if the user asks to \"extract,\" \"summarize,\" \"read,\" or \"list facts.\" \n   - DO NOT use the search tool. \n   - Simply transcribe the handwritten data into a clean, structured list.\n   - Include: Patient info, Diagnosis codes, Procedure names, and Costs.\n\n2. RULE VALIDATION MODE: Triggered if the user asks to \"validate,\" \"check,\" \"audit,\" or \"evaluate.\"\n   - STEP 1: Extract technical facts (ICD-10 codes, specific medicines, and procedure names).\n   - STEP 2: Use the Qdrant Search Tool. Your search query MUST include the technical terms (e.g., \"Policy for Z35.9 elective c-section\").\n   - STEP 3: Compare facts to retrieved rules and provide a conclusion (Approve/Deny/Incomplete).\n\n### CONSTRAINTS:\n- For Mode 2, if no rules are found, try ONE broader search (e.g., \"General Surgery Policy\").\n- Never use outside medical knowledge; only use what is in the document or the retrieved rules.\n- If you are unsure which mode to use, default to Rule Validation Mode but list the extracted facts first."
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        576,
-        -336
+        1136,
+        -304
       ],
       "id": "e51077a5-4235-4a41-b09a-79f56db8389a",
       "name": "Rules Engine AI Agent"
@@ -316,8 +316,8 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        864,
-        80
+        1424,
+        112
       ],
       "id": "d8fe6236-c640-41f7-8082-0d37ee918d5c",
       "name": "embeddinggemma:300m (1)",
@@ -335,8 +335,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1760,
-        -1840
+        -1680,
+        -2560
       ],
       "id": "90cc9daf-b38f-41e4-bc26-90382cbc0497",
       "name": "Create Dense+Sparse Content from JSON objects"
@@ -368,8 +368,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        512,
-        -80
+        1072,
+        -48
       ],
       "id": "e3ef869a-fade-4f78-a917-24e5ee2bf831",
       "name": "Groq Chat Model",
@@ -383,14 +383,14 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You may receive content that includes Markdown or HTML.\n\n**Task:**\n- Convert and respond **only** in clear, human-readable **Markdown**\n- Do **not** include any HTML in your response\n- Preserve the original meaning, structure, and emphasis\n- Improve readability where appropriate\n\n**Content to process:**\n{{ $('Extract Claim Info with Paddle OCR').first().json.markdown }}",
+        "text": "=You may receive content that includes Markdown or HTML.\n\n**Task:**\n- Convert and respond **only** in clear, human-readable **Markdown**\n- Do **not** include any HTML in your response\n- Preserve the original meaning, structure, and emphasis\n- Improve readability where appropriate\n\n**Content to process:**\n{{ $('Parse one page1').first().json.choices[0].message.content }}",
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        224,
-        -336
+        784,
+        -304
       ],
       "id": "af570c7c-60ce-4e4c-9317-eac54cfea0a4",
       "name": "Basic LLM Chain"
@@ -405,8 +405,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        272,
-        -160
+        832,
+        -128
       ],
       "id": "b85d18d8-8d33-4468-ad16-ad96dffecf60",
       "name": "Groq Chat Model2",
@@ -458,7 +458,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -992,
+        -784,
         336
       ],
       "id": "50de6850-fc1b-42c1-a4cb-d8c84d07d198",
@@ -494,7 +494,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -736,
+        -528,
         176
       ],
       "id": "007b2f82-da8c-4937-aef3-0d64b669035a",
@@ -543,7 +543,7 @@
     {
       "parameters": {
         "mode": "retrieve-as-tool",
-        "toolDescription": "=Match this structured claim to the best rules engine by values, fields and types.\n\n",
+        "toolDescription": "ONLY use this tool if you need to find ZHSF Policy Rules for a claim. \n\nDo NOT use this tool for simple text extraction or OCR tasks. \n\nWhen searching, prioritize using ICD-10 diagnosis codes (e.g., 'I25.5') and procedure names (e.g., 'Hemodialysis') to find the specific reimbursement and authorization rules.",
         "qdrantCollection": {
           "__rl": true,
           "value": "rules-engine",
@@ -555,7 +555,7 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.3,
       "position": [
-        176,
+        384,
         576
       ],
       "id": "ca196760-f469-426c-849a-99f61b521d50",
@@ -578,7 +578,7 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3,
       "position": [
-        -48,
+        160,
         288
       ],
       "id": "25ddc8f2-957d-4e09-bc2f-7bdc561bb3a0",
@@ -591,7 +591,7 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        272,
+        480,
         720
       ],
       "id": "ec982641-6047-4b76-abd8-2d7335d5395a",
@@ -611,7 +611,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        -160,
+        48,
         576
       ],
       "id": "9bdce607-28ea-4146-9d32-de2327d12964",
@@ -632,7 +632,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -496,
+        -288,
         288
       ],
       "id": "ec048da4-64a6-45f9-9da3-72cc060a1d44",
@@ -653,7 +653,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        304,
+        512,
         288
       ],
       "id": "8c1b2f7d-d48d-4f79-80ab-4b0341e9e5dd",
@@ -674,7 +674,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        736,
+        944,
         288
       ],
       "id": "b4d9aecf-4b44-45d7-a69b-2f8abf94a1f1",
@@ -689,7 +689,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -736,
+        -528,
         432
       ],
       "id": "2ede3e2d-b283-45f2-bad8-5247de59e586",
@@ -708,7 +708,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -272,
+        -64,
         288
       ],
       "id": "b5c8e0d2-6c4e-4e7e-b012-2f2893f2c9e2",
@@ -845,8 +845,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -704,
-        -304
+        -144,
+        -272
       ],
       "id": "f0f489d7-bf1f-448b-8bb6-472ae66b5949",
       "name": "IF: is new thread ?1"
@@ -860,8 +860,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -464,
-        -432
+        96,
+        -400
       ],
       "id": "cf9e0d22-6947-4286-bd22-752330784567",
       "name": "SQL: Create New Thread/ User Message1",
@@ -881,8 +881,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -464,
-        -176
+        96,
+        -144
       ],
       "id": "d8aa8000-35c1-43de-a7d4-3db40d041f14",
       "name": "SQL: Insert msg to existing Thread1",
@@ -902,8 +902,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -224,
-        -336
+        336,
+        -304
       ],
       "id": "10fe11df-6e09-43de-96b0-8cddc4807d5a",
       "name": "SQL: Fetch Messages1",
@@ -921,8 +921,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
-        -336
+        560,
+        -304
       ],
       "id": "379f51bf-00a1-440b-9aca-78d237208168",
       "name": "Format/ Prepare Thread Msgs1"
@@ -936,8 +936,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        880,
-        -336
+        1440,
+        -304
       ],
       "id": "c2a77a20-935d-4b39-9534-8de236bed656",
       "name": "SQL: Save AI Message1",
@@ -957,8 +957,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        1280,
-        -336
+        1840,
+        -304
       ],
       "id": "5d7cbcd6-c1a5-487e-bb15-65fb34c9bd0c",
       "name": "Respond to Webhook5"
@@ -970,8 +970,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1056,
-        -336
+        1616,
+        -304
       ],
       "id": "2cc6de19-1a3c-47d1-b895-8d6fe7b3fc46",
       "name": "Code in JavaScript1"
@@ -983,7 +983,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        496,
+        704,
         288
       ],
       "id": "5c1ae6ee-65c9-4a4f-be7e-aab36b561c06",
@@ -1032,8 +1032,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -800,
-        -1104
+        -784,
+        -1824
       ],
       "id": "c7d34e91-5e5e-4a45-a597-0a4d49b3981b",
       "name": "SQL: Create New Thread/ User Message2",
@@ -1053,8 +1053,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -560,
-        -1008
+        -544,
+        -1728
       ],
       "id": "aa09e15e-c708-4504-9caf-ea1044142608",
       "name": "SQL: Fetch Messages2",
@@ -1074,8 +1074,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -800,
-        -864
+        -784,
+        -1584
       ],
       "id": "0cce7350-e5e3-474c-9115-cf067d4de4d5",
       "name": "SQL: Insert msg to existing Thread2",
@@ -1093,8 +1093,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -336,
-        -1008
+        -320,
+        -1728
       ],
       "id": "8d6537a7-4713-45f9-9aa0-ef750c3849c5",
       "name": "Format/ Prepare Thread Msgs2"
@@ -1127,8 +1127,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1072,
-        -976
+        -1056,
+        -1696
       ],
       "id": "6bd994d7-38cc-4068-b3c1-00d94e0ba399",
       "name": "IF: is new thread ?2"
@@ -1142,8 +1142,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        304,
-        -1008
+        320,
+        -1728
       ],
       "id": "338d8a94-8b51-4a48-90ba-7e6a1464cfc9",
       "name": "SQL: Save AI Message2",
@@ -1163,8 +1163,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        736,
-        -1008
+        752,
+        -1728
       ],
       "id": "1102eb11-e456-43a6-bcbb-05b261d3b74c",
       "name": "Respond to Webhook6"
@@ -1176,11 +1176,402 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        496,
-        -1008
+        512,
+        -1728
       ],
       "id": "579aecfe-26f9-44c7-affd-123c9e147345",
       "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"meta-llama/llama-4-scout-17b-16e-instruct\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a vision OCR engine. Extract only the text visible on the page. Output a JSON array where each element is exactly one block of text as it appears. Do not add explanations, summaries, or any extra content.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Return the visible text exactly as it appears in the image, in reading order, as a JSON array only.\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"{{ $json.base64_image }}\"\n          }\n        }\n      ]\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        240,
+        -944
+      ],
+      "id": "5d51156c-2411-4ed5-a512-e52910511fdd",
+      "name": "Parse one page"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "605d62be-6097-4b8d-bcea-d543ddc3edeb",
+              "leftValue": "={{ $json.webhook_data.attachmentName }}",
+              "rightValue": ".pdf",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1056,
+        -288
+      ],
+      "id": "1e7d09ab-8769-4350-9184-6843cc8f0719",
+      "name": "file is PDF ?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get the single item containing all the binary images\nconst item = $input.first();\nconst binaryData = item.binary;\n\n// 2. Find all keys that are page images (e.g., 'images_page_1', 'images_page_2')\nconst pageKeys = Object.keys(binaryData).filter(key => key.startsWith('images_'));\n\n// 3. Sort them so page 1 comes before page 2, etc.\npageKeys.sort((a, b) => {\n  const numA = parseInt(a.replace('images_page_', ''));\n  const numB = parseInt(b.replace('images_page_', ''));\n  return numA - numB;\n});\n\n// 4. Create a separate item for each page\nconst pages = pageKeys.map((key, index) => {\n  const imageFile = binaryData[key];\n  \n  return {\n    json: {\n      page_number: index + 1,\n      // Create the standard Base64 Data URI for Groq/OpenAI APIs\n      base64_image: `data:${imageFile.mimeType};base64,${imageFile.data}`\n    }\n  };\n});\n\nreturn pages;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        -960
+      ],
+      "id": "40a687d5-0cbe-4d8d-9c39-2c767a947f44",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -16,
+        -960
+      ],
+      "id": "b7835255-a7b7-472d-a99f-2382ab3eb91f",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base64String = $('Convert image to BASE64').first().json.file0\nreturn {\n  json: { message: \"Converted to binary\" },\n  binary: {\n    data: {\n      data: base64String,\n      mimeType: 'application/pdf',\n      fileName: 'file.pdf'\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        -960
+      ],
+      "id": "64644c56-465e-4598-a15c-278e9b6d5876",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "density": 40
+      },
+      "type": "n8n-nodes-pdfconvert.pdfConvert",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -960
+      ],
+      "id": "23b962eb-2e26-4c86-a6e7-e3e0f310ee19",
+      "name": "PDF Convert"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==== CURRENT USER MESSAGE ===\n{{ $('Code in JavaScript').first().json.user_message }}\n\nTHIS IS PAGE NUMBER {{ $json.choices[0].index + 1 }} :\n```markdown\n{{ $json.choices[0].message.content }}\n```",
+        "options": {
+          "systemMessage": "You are an expert Medical Claims Auditor for ZHSF. You operate in two distinct modes based on the user's request.\n\n### OPERATING MODES:\n1. OCR/EXTRACTION MODE: Triggered if the user asks to \"extract,\" \"summarize,\" \"read,\" or \"list facts.\" \n   - DO NOT use the search tool. \n   - Simply transcribe the handwritten data into a clean, structured list.\n   - Include: Patient info, Diagnosis codes, Procedure names, and Costs.\n\n2. RULE VALIDATION MODE: Triggered if the user asks to \"validate,\" \"check,\" \"audit,\" or \"evaluate.\"\n   - STEP 1: Extract technical facts (ICD-10 codes, specific medicines, and procedure names).\n   - STEP 2: Use the Qdrant Search Tool. Your search query MUST include the technical terms (e.g., \"Policy for Z35.9 elective c-section\").\n   - STEP 3: Compare facts to retrieved rules and provide a conclusion (Approve/Deny/Incomplete).\n\n### CONSTRAINTS:\n- For Mode 2, if no rules are found, try ONE broader search (e.g., \"General Surgery Policy\").\n- Never use outside medical knowledge; only use what is in the document or the retrieved rules.\n- If you are unsure which mode to use, default to Rule Validation Mode but list the extracted facts first."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        448,
+        -944
+      ],
+      "id": "78ee9af0-7833-44a7-ae78-d0419e6ffa9a",
+      "name": "Rules Engine AI Agent1"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=ONLY use this tool if you need to find ZHSF Policy Rules for a claim. \n\nDo NOT use this tool for simple text extraction or OCR tasks. \n\nWhen searching, prioritize using ICD-10 diagnosis codes (e.g., 'I25.5') and procedure names (e.g., 'Hemodialysis') to find the specific reimbursement and authorization rules.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rules-engine",
+          "mode": "list",
+          "cachedResultName": "rules-engine"
+        },
+        "topK": 12,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        -688
+      ],
+      "id": "32bea6e9-17e1-43e2-907b-44b516dd0c0b",
+      "name": "Retrieve Compatible Rules1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "9g9FVeOFvcZvztrb",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "embeddinggemma:300m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        736,
+        -528
+      ],
+      "id": "5206a28d-d2dc-4ee8-9eff-76d09da498da",
+      "name": "embeddinggemma:300m (1)1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Ioik0GQDygB82fN6",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        352,
+        -688
+      ],
+      "id": "cee2e209-c3e5-4f09-81ed-87c57b24ff87",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "pAwckXPf9euftlt9",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -1152
+      ],
+      "id": "bcbbce8c-dbac-46d1-b1a7-b9e57605224d",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the array of results from the previous node\nconst items = $input.first().json.data\n\n// Combine them into a single Markdown-formatted string\nconst formattedOutput = items.map((item, index) => {\n  return `## Response of Page ${index + 1}\\n\\n${item.output}`;\n}).join('\\n\\n---\\n\\n');\n\n// Return as a single string under \"response\" key\nreturn {\n  response: formattedOutput\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -1152
+      ],
+      "id": "c465b2ae-e052-481d-afdd-2683a8d96d84",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $json.thread_id }}',\n  'assistant',\n  '{{ $node[\"Code in JavaScript4\"].json.response }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1808,
+        -1152
+      ],
+      "id": "e06812a7-325c-44c2-a432-e84438e7688d",
+      "name": "SQL: Save AI Message3",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "096b5129-dc97-4da5-8f53-666cbc148e9a",
+              "leftValue": "={{ $('IF: has a file ?').item.json.is_new_thread }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        -1152
+      ],
+      "id": "b46ae36c-67e0-4ff7-8f94-ee8cf666da35",
+      "name": "IF: is new thread ?3"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message with optional attachment\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1456,
+        -1280
+      ],
+      "id": "86552d62-665b-4a14-8315-69bfc5140d50",
+      "name": "SQL: Create New Thread/ User Message3",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Optional: update thread's updated_at timestamp\nUPDATE threads\nSET updated_at = NOW()\nWHERE thread_id = '{{ $('Code in JavaScript').item.json.thread_id }}';\n\n-- Insert the new user message\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1456,
+        -1024
+      ],
+      "id": "fda262f5-a1a6-4b8b-a839-c6b24e4aab02",
+      "name": "SQL: Insert msg to existing Thread3",
+      "credentials": {
+        "postgres": {
+          "id": "IM3af1wm8PjJkHuM",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2256,
+        -1152
+      ],
+      "id": "31885624-6227-4a81-9ef5-575afc6b3d43",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ \n  json: { \n    \"response\": $input.first().json.content,\n    \"thread_id\": $input.first().json.thread_id\n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2032,
+        -1152
+      ],
+      "id": "179854b9-ec29-41ea-ae1d-acbfde0ee491",
+      "name": "Code in JavaScript7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"meta-llama/llama-4-scout-17b-16e-instruct\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a vision OCR engine. Extract only the text visible on the page. Output a JSON array where each element is exactly one block of text as it appears. Do not add explanations, summaries, or any extra content.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Return the visible text exactly as it appears in the image, in reading order, as a JSON array only.\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"data:image/jpeg;base64,{{ $('Convert image to BASE64').item.json.file0 }}\"\n          }\n        }\n      ]\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -592,
+        -272
+      ],
+      "id": "cb8417dc-d9ab-48e6-9765-43848637fd1d",
+      "name": "Parse one page1"
+    },
+    {
+      "parameters": {
+        "content": "OFF",
+        "height": 272,
+        "width": 336,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -640,
+        -672
+      ],
+      "typeVersion": 1,
+      "id": "4b81fa92-7517-4327-bc08-3c010a3d2f10",
+      "name": "Sticky Note"
     }
   ],
   "pinData": {},
@@ -1337,13 +1728,7 @@
     },
     "Extract Claim Info with Paddle OCR": {
       "main": [
-        [
-          {
-            "node": "IF: is new thread ?1",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Convert image to BASE64": {
@@ -1478,7 +1863,7 @@
       "main": [
         [
           {
-            "node": "Extract Claim Info with Paddle OCR",
+            "node": "file is PDF ?",
             "type": "main",
             "index": 0
           }
@@ -1847,16 +2232,235 @@
           }
         ]
       ]
+    },
+    "file is PDF ?": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse one page1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse one page": {
+      "main": [
+        [
+          {
+            "node": "Rules Engine AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parse one page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "PDF Convert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF Convert": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Compatible Rules1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Rules Engine AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "embeddinggemma:300m (1)1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Retrieve Compatible Rules1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Rules Engine AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rules Engine AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "IF: is new thread ?3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: is new thread ?3": {
+      "main": [
+        [
+          {
+            "node": "SQL: Create New Thread/ User Message3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL: Insert msg to existing Thread3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Create New Thread/ User Message3": {
+      "main": [
+        [
+          {
+            "node": "SQL: Save AI Message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Insert msg to existing Thread3": {
+      "main": [
+        [
+          {
+            "node": "SQL: Save AI Message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript7": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Save AI Message3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse one page1": {
+      "main": [
+        [
+          {
+            "node": "IF: is new thread ?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "49d2f777-739f-41c6-81f4-511ca3e20782",
+  "versionId": "da6c49fa-e073-4040-a84c-a8ae19413ece",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "b9434c6dfefdabca09fc57ee2f0dce8039d2dd5c888f0d629b5404390b1ef2c1"
+    "instanceId": "55db16e65fdbec46bee6fd38a33a0a55061e4b974c6bd574b6e1877d5dc8fdab"
   },
   "id": "2U8lxXMrUX6ImKgy",
   "tags": [
