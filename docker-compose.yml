@@ -9,13 +9,14 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: n8n
-      POSTGRES_USER: n8n
-      POSTGRES_PASSWORD: n8n
+      POSTGRES_DB: ${N8N_DB_NAME}
+      POSTGRES_USER: ${N8N_DB_USER}
+      POSTGRES_PASSWORD: ${N8N_DB_PASSWORD}
     volumes:
       - n8n_postgres-data:/var/lib/postgresql/data
+      - ./n8n/init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n"]
+      test: ["CMD-SHELL", "pg_isready -U ${N8N_DB_USER} -d ${N8N_DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -49,32 +50,50 @@ services:
       - tanzania-network
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.120.1
+    build:
+      context: ./n8n
+      dockerfile: Dockerfile.n8n
     restart: unless-stopped
     ports:
       - "5678:5678"
     environment:
-      N8N_FEATURE_FLAG_MCP: 'true'
-      DB_TYPE: postgresdb
-      DB_POSTGRESDB_HOST: n8n-postgres
-      DB_POSTGRESDB_PORT: 5432
-      DB_POSTGRESDB_DATABASE: n8n
-      DB_POSTGRESDB_USER: n8n
-      DB_POSTGRESDB_PASSWORD: n8n
-      GENERIC_TIMEZONE: Europe/Berlin
-      TZ: Europe/Berlin
-      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'true'
-      N8N_RUNNERS_ENABLED: 'true'
-      N8N_HOST: 0.0.0.0
-      N8N_PORT: 5678
-      N8N_PROTOCOL: http
-      NODE_ENV: production
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=n8n-postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME}
+      - DB_POSTGRESDB_USER=${N8N_DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
+      - N8N_HOST=0.0.0.0
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_PUBLIC_API_DISABLED=false
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - N8N_BLOCK_ENV_ACCESS_IN_EXPRESSIONS=false
+      - N8N_ALLOW_ENV_ACCESS_IN_NODE=true
+      - NODE_FUNCTION_ALLOW_EXTERNAL=n8n-nodes-pdfconvert
     volumes:
       - n8n_data:/home/node/.n8n
       - ./n8n:/home/external:rw
     depends_on:
       n8n-postgres:
         condition: service_healthy
+    entrypoint: []
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "starting programmatic initialization..."
+        
+        echo "importing Credentials..."
+        n8n import:credentials --input=/home/external/credentials.json
+        
+        echo "importing Workflow..."
+        n8n import:workflow --input=/home/external/RAG-OCR-workflow.json
+        
+        echo "initialization complete, launching n8n..."
+        exec n8n start
     networks:
       - tanzania-network
 
@@ -89,7 +108,7 @@ services:
       - qdrant_data:/qdrant/storage
       - ./qdrant:/qdrant/config
     environment:
-      - QDRANT__SERVICE__API_KEY=64f57fc04ea02d7f44ff52c2400ea11044d230343851a2f116a96bfaa6b98471
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
       - QDRANT__LOG_LEVEL=INFO
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
@@ -117,6 +136,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
       - NEXT_PUBLIC_SUPABASE_URL=http://kong:8000
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
@@ -169,7 +189,38 @@ services:
     networks:
       - tanzania-network
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.6
+    container_name: keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: n8n-postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_REALM_ADMIN_USER: ${KEYCLOAK_REALM_ADMIN_USER}
+      KEYCLOAK_REALM_ADMIN_EMAIL: ${KEYCLOAK_REALM_ADMIN_EMAIL}
+      KEYCLOAK_REALM_ADMIN_PASSWORD: ${KEYCLOAK_REALM_ADMIN_PASSWORD}
+      KEYCLOAK_FRONTEND_REDIRECT_URI_1: ${KEYCLOAK_FRONTEND_REDIRECT_URI_1}
+      KEYCLOAK_FRONTEND_REDIRECT_URI_2: ${KEYCLOAK_FRONTEND_REDIRECT_URI_2}
+    command: 
+      - start-dev
+      - --import-realm
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
+    networks:
+      - tanzania-network
+    depends_on:
+      - n8n-postgres
+    restart: unless-stopped
+
 volumes:
+  keycloak_data:
   n8n_data:
   n8n_postgres-data:
   qdrant_data:
@@ -179,3 +230,4 @@ volumes:
 networks:
   tanzania-network:
     driver: bridge
+    

@@ -15,9 +15,14 @@ interface SidebarProps {
   refreshTrigger: number;
   onThreadSelect: (threadId: string) => void;
   onNewChat: () => void;
+  user?: {
+    name?: string;
+    preferred_username?: string;
+    email?: string;
+  } | null;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMobile, selectedThreadId, refreshTrigger, onThreadSelect, onNewChat }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMobile, selectedThreadId, refreshTrigger, onThreadSelect, onNewChat, user }) => {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +31,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
   useEffect(() => {
     const fetchThreads = async () => {
       try {
-        const response = await fetch('/api/threads');
+        let apiUrl = '/api/threads';
+        if (user) {
+          const username = user.name || user.preferred_username || user.email || '';
+          if (username) {
+            apiUrl += `?username=${encodeURIComponent(username)}`;
+          }
+        }
+        
+        const response = await fetch(apiUrl);
         if (response.ok) {
           const data = await response.json();
           const threadsArray = Array.isArray(data) ? data : [data];
@@ -40,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setIsSidebarOpen, isMo
     };
 
     fetchThreads();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, user]);
 
   useEffect(() => {
     if (searchQuery) {

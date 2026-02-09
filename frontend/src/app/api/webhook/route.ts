@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
     let hasFile = false;
     let fileData: FormData | null = null;
     let mcpIsOn = false;
+    let username: string | null = null;
 
     if (contentType.includes('application/json')) {
       const body = await request.json();
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest) {
       const formData = await request.formData();
       message = formData.get('message') as string || '';
       threadId = formData.get('thread_id') as string || null;
+      username = formData.get('username') as string || null;
       mcpIsOn = (formData.get('mcp_is_on') as string) === 'true';
 
       // check if file exists in form data
@@ -50,6 +52,9 @@ export async function POST(request: NextRequest) {
     n8nFormData.append('message', message);
     if (threadId) {
       n8nFormData.append('thread_id', threadId);
+    }
+    if (username) {
+      n8nFormData.append('username', username);
     }
     if (mcpIsOn) {
       n8nFormData.append('mcp_is_on', 'true');

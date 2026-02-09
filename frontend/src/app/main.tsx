@@ -1,14 +1,18 @@
 "use client"
 import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { FiSidebar, FiShare, FiInfo, FiArrowDown, FiAlertTriangle } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
 import Message from './components/Message';
 import InputComponent from './components/InputComponent';
 import NewChatWelcome from './components/NewChatWelcome';
 import { Message as MessageType } from './types';
+import { useAuth } from '../context/AuthContext';
 
 const AIChatInterface = () => {
+  const { keycloak, user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -44,6 +48,16 @@ const AIChatInterface = () => {
   }, []);
 
   useEffect(() => {
+    if (user && !selectedThreadId && !isNewChatMode) {
+      setShowWelcome(true);
+      const timer = setTimeout(() => {
+        setShowWelcome(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, selectedThreadId, isNewChatMode]);
+
+  useEffect(() => {
     const chatArea = chatAreaRef.current;
     if (!chatArea) return;
 
@@ -66,7 +80,11 @@ const AIChatInterface = () => {
 
       setLoadingMessages(true);
       try {
-        const response = await fetch(`/api/messages?thread_id=${encodeURIComponent(selectedThreadId)}`);
+        const headers: HeadersInit = {};
+        if (keycloak.token) {
+          headers['Authorization'] = `Bearer ${keycloak.token}`;
+        }
+        const response = await fetch(`/api/messages?thread_id=${encodeURIComponent(selectedThreadId)}${user ? `&username=${encodeURIComponent(user.name || user.preferred_username || user.email || '')}` : ''}`, { headers });
         if (response.ok) {
           const data = await response.json();
           setMessages(data);
@@ -134,9 +152,22 @@ const AIChatInterface = () => {
         formData.append('file', uploadedFile);
         formData.append('attachmentName', uploadedFile.name);
       }
+      // Include username in the form data
+      if (user && user.name) {
+        formData.append('username', user.name);
+      } else if (user && user.preferred_username) {
+        formData.append('username', user.preferred_username);
+      } else if (user && user.email) {
+        formData.append('username', user.email);
+      }
 
+      const headers: HeadersInit = {};
+      if (keycloak.token) {
+        headers['Authorization'] = `Bearer ${keycloak.token}`;
+      }
       const response = await fetch('/api/webhook', {
         method: 'POST',
+        headers,
         body: formData,
       });
 
@@ -159,7 +190,7 @@ const AIChatInterface = () => {
 
         if (selectedThreadId || newThreadId) {
           const threadIdToFetch = selectedThreadId || newThreadId;
-          const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadIdToFetch)}`);
+          const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadIdToFetch)}${user ? `&username=${encodeURIComponent(user.name || user.preferred_username || user.email || '')}` : ''}`);
           if (messagesResponse.ok) {
             const data = await messagesResponse.json();
             setMessages(data);
@@ -167,7 +198,7 @@ const AIChatInterface = () => {
             const latestAssistantIndex = data.findLastIndex((msg: MessageType) => msg.role === 'assistant');
             if (latestAssistantIndex !== -1) {
               setStreamingMessageIndex(latestAssistantIndex);
-              const streamingDuration = Math.max(1000, data[latestAssistantIndex].content.length * 20); // ~20ms per character
+              const streamingDuration = Math.max(1000, data[latestAssistantIndex].content.length * 20);
               setTimeout(() => {
                 setStreamingMessageIndex(null);
               }, streamingDuration);
@@ -190,11 +221,15 @@ const AIChatInterface = () => {
   const refreshThreadsWithRetry = async (retries = 3) => {
     for (let i = 0; i < retries; i++) {
       try {
-        const response = await fetch('/api/threads');
+        const headers: HeadersInit = {};
+        if (keycloak.token) {
+          headers['Authorization'] = `Bearer ${keycloak.token}`;
+        }
+        const response = await fetch(`/api/threads${user ? `?username=${encodeURIComponent(user.name || user.preferred_username || user.email || '')}` : ''}`, { headers });
         if (response.ok) {
           const data = await response.json();
           const threadsArray = Array.isArray(data) ? data : [data];
-          const hasNewThread = threadsArray.some((thread: any) => thread.thread_id === selectedThreadId);
+          const hasNewThread = threadsArray.some((thread: { thread_id: string }) => thread.thread_id === selectedThreadId);
           if (hasNewThread || i === retries - 1) {
             setRefreshThreadsTrigger(prev => prev + 1);
             break;
@@ -212,7 +247,11 @@ const AIChatInterface = () => {
   const fetchMessagesWithRetry = async (threadId: string, retries = 5) => {
     for (let i = 0; i < retries; i++) {
       try {
-        const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadId)}`);
+        const headers: HeadersInit = {};
+        if (keycloak.token) {
+          headers['Authorization'] = `Bearer ${keycloak.token}`;
+        }
+        const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadId)}${user ? `&username=${encodeURIComponent(user.name || user.preferred_username || user.email || '')}` : ''}`, { headers });
         if (messagesResponse.ok) {
           const data = await messagesResponse.json();
           if (data && data.length > 0) {
@@ -230,8 +269,42 @@ const AIChatInterface = () => {
     }
   };
 
+  const handleLogout = () => {
+    keycloak.logout({ redirectUri: window.location.origin });
+  };
+
   return (
-    <div className="flex h-screen w-full bg-white text-gray-800 font-sans antialiased overflow-hidden selection:bg-gray-100 relative">
+    <>
+      {showWelcome && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
+          <motion.div
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4 text-center"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Welcome {user?.name ? `, ${user.name}` : ''}!
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Ready to continue your conversation? Choose a thread or start a new chat.
+            </p>
+            <div className="flex justify-center space-x-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      <div className="flex h-screen w-full bg-white text-gray-800 font-sans antialiased overflow-hidden selection:bg-gray-100 relative">
 
       {isMobile && isSidebarOpen && (
         <div 
@@ -254,6 +327,7 @@ const AIChatInterface = () => {
           setSelectedThreadId(null);
           setIsNewChatMode(true);
         }}
+        user={user}
       />
 
       <main className="flex-1 flex flex-col min-w-0 bg-white relative z-0">
@@ -270,13 +344,50 @@ const AIChatInterface = () => {
             )}
             <h1 className="text-base md:text-lg font-semibold text-gray-800 truncate">ZHSF AI Chatbot</h1>
           </div>
-          {isMcpMode && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
-              <img src="/mcp-icon.svg" alt="MCP" className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden md:inline">Using MCP server with AI reconciliation tools; File attachment, RAG, OCR, and rules engine <span className="text-red-700 font-bold">are disabled.</span></span>
-              <span className="md:hidden">MCP: AI tools active</span>
-            </div>
-          )}
+          
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="flex items-center gap-2">
+                <div className="hidden md:flex flex-col items-end leading-tight">
+                  <span className="text-sm font-medium text-gray-800 truncate max-w-xs">
+                    {user.name || user.preferred_username || user.email || 'User'}
+                  </span>
+                  <span className="text-xs text-gray-500 truncate max-w-xs">
+                    {user.email || 'User Account'}
+                  </span>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold">
+                  {user.name 
+                    ? user.name.charAt(0).toUpperCase() 
+                    : user.preferred_username 
+                      ? user.preferred_username.charAt(0).toUpperCase()
+                      : user.email
+                        ? user.email.charAt(0).toUpperCase()
+                        : '?'}
+                </div>
+                
+                <button
+                  onClick={handleLogout}
+                  className="ml-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-md transition-colors flex items-center gap-1.5"
+                  title="Sign out"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" x2="9" y1="12" y2="12"/>
+                  </svg>
+                  <span className="hidden sm:inline">Sign out</span>
+                </button>
+              </div>
+            )}
+            {isMcpMode && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
+                <img src="/mcp-icon.svg" alt="MCP" className="w-4 h-4 flex-shrink-0" />
+                <span className="hidden md:inline">Using MCP server with AI reconciliation tools; File attachment, RAG, OCR, and rules engine {' '} <span className="text-red-700 font-bold">are disabled.</span></span>
+                <span className="md:hidden">MCP: AI tools active</span>
+              </div>
+            )}
+          </div>
         </header>
 
         <div ref={chatAreaRef} className={`flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-gray-200 ${isMcpMode ? 'bg-yellow-100' : ''} transition-colors duration-500 ease-in-out`}>
@@ -381,6 +492,7 @@ const AIChatInterface = () => {
 
       </main>
     </div>
+    </>
   );
 };
 
