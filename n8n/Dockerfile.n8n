@@ -1,0 +1,8 @@
+FROM docker.n8n.io/n8nio/n8n:1.120.1
+USER root
+
+RUN apk add --update --no-cache graphicsmagick ghostscript
+
+RUN npm install -g n8n-nodes-pdfconvert
+
+USER node
