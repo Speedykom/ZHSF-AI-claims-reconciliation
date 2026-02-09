@@ -65,7 +65,7 @@
       "typeVersion": 1,
       "position": [
         -2096,
-        -2560
+        -2800
       ],
       "id": "19da0d96-abf9-4af1-83a6-e0f81ffa40c8",
       "name": "Pull Rules Engine Excel file"
@@ -76,7 +76,7 @@
       "typeVersion": 1,
       "position": [
         -2304,
-        -2560
+        -2800
       ],
       "id": "3416a46d-e5de-4059-957f-f12716653780",
       "name": "RUN !"
@@ -90,7 +90,7 @@
       "typeVersion": 1.1,
       "position": [
         -1888,
-        -2560
+        -2800
       ],
       "id": "047e9e6d-2f26-405a-aee3-415812c8bfb8",
       "name": "Convert excel to JSON"
@@ -103,7 +103,7 @@
       "typeVersion": 3,
       "position": [
         -1440,
-        -2560
+        -2800
       ],
       "id": "37261219-428b-41e5-8699-81954cddde9e",
       "name": "Loop Over Rules"
@@ -126,7 +126,7 @@
       "typeVersion": 3.4,
       "position": [
         -1216,
-        -2544
+        -2784
       ],
       "id": "ecb874c4-c952-4660-a99b-36a642fbab5a",
       "name": "Get one Organized Readable Rule"
@@ -139,7 +139,7 @@
       "typeVersion": 2,
       "position": [
         -992,
-        -2544
+        -2784
       ],
       "id": "eda0f892-1806-4aa4-a690-a2b6fd76a950",
       "name": "Convert to Natural Language Rule"
@@ -159,7 +159,7 @@
       "typeVersion": 1.3,
       "position": [
         -800,
-        -2544
+        -2784
       ],
       "id": "85ebdd6f-0bef-4c03-8a7c-ea32ec7667e7",
       "name": "Rules-Engine Vectorstore",
@@ -179,7 +179,7 @@
       "typeVersion": 1.1,
       "position": [
         -656,
-        -2336
+        -2576
       ],
       "id": "ff0d2f84-62aa-4d9c-8452-34e6c64b5176",
       "name": "Load Natural Language Rule"
@@ -192,7 +192,7 @@
       "typeVersion": 1,
       "position": [
         -576,
-        -2192
+        -2432
       ],
       "id": "c70ef6f9-ce9a-4cc2-b15b-bb8802f2fc04",
       "name": "Biggest Token Chunk Size"
@@ -205,7 +205,7 @@
       "typeVersion": 1,
       "position": [
         -1216,
-        -2752
+        -2992
       ],
       "id": "ebea619d-76ec-416c-967b-c5659f1de34d",
       "name": "ECHO DONE. IN N8N BASH"
@@ -218,7 +218,7 @@
       "typeVersion": 1,
       "position": [
         -848,
-        -2192
+        -2432
       ],
       "id": "7131fc6c-c31d-4f68-bfe4-06eb138c9469",
       "name": "embeddinggemma:300m (2)",
@@ -336,7 +336,7 @@
       "typeVersion": 2,
       "position": [
         -1680,
-        -2560
+        -2800
       ],
       "id": "90cc9daf-b38f-41e4-bc26-90382cbc0497",
       "name": "Create Dense+Sparse Content from JSON objects"
@@ -467,7 +467,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Create threads table\nCREATE TABLE IF NOT EXISTS threads (\n    thread_id VARCHAR(100) PRIMARY KEY,\n    title VARCHAR(255),\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- Create messages table\nCREATE TABLE IF NOT EXISTS messages (\n    message_id SERIAL PRIMARY KEY,\n    thread_id VARCHAR(100) NOT NULL,\n    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),\n    content TEXT NOT NULL,\n    attachment_name VARCHAR(255), -- Optional attachment field\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE\n);\n\n-- Create indexes for better performance\nCREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id);\nCREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);\nCREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at);",
+        "query": "-- Create threads table with username\nCREATE TABLE IF NOT EXISTS threads (\n    thread_id VARCHAR(100) PRIMARY KEY,\n    username VARCHAR(100) NOT NULL,\n    title VARCHAR(255),\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\n-- Create messages table\nCREATE TABLE IF NOT EXISTS messages (\n    message_id SERIAL PRIMARY KEY,\n    thread_id VARCHAR(100) NOT NULL,\n    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),\n    content TEXT NOT NULL,\n    attachment_name VARCHAR(255), -- Optional attachment field\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    FOREIGN KEY (thread_id) REFERENCES threads(thread_id) ON DELETE CASCADE\n);\n\nCREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages(thread_id);\nCREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);\nCREATE INDEX IF NOT EXISTS idx_threads_created_at ON threads(created_at);\nCREATE INDEX IF NOT EXISTS idx_threads_username ON threads(username);\n\nCREATE INDEX IF NOT EXISTS idx_threads_username_created ON threads(username, created_at DESC);",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -488,7 +488,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
+        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, username, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $json.webhook_data.username }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET \n  updated_at = NOW(),\n  username = EXCLUDED.username;  -- Optional: update username on conflict\n\n-- Then, insert the user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -683,7 +683,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Optional: update thread's updated_at timestamp\nUPDATE threads\nSET updated_at = NOW()\nWHERE thread_id = '{{ $('Code in JavaScript').item.json.thread_id }}';\n\n-- Insert the new user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;\n",
+        "query": "UPDATE threads\nSET updated_at = NOW()\nWHERE thread_id = '{{ $('Code in JavaScript').item.json.thread_id }}'\n  AND username = '{{ $json.webhook_data.username }}';\n\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -724,7 +724,7 @@
       "typeVersion": 2.1,
       "position": [
         -2272,
-        784
+        960
       ],
       "id": "f272e945-7db4-4b6b-8f5c-09b2004501d0",
       "name": "Webhook3",
@@ -740,7 +740,7 @@
       "typeVersion": 1.4,
       "position": [
         -1856,
-        784
+        960
       ],
       "id": "8de9cf06-b5bb-4b9c-ad13-c3049959aeca",
       "name": "Respond to Webhook3"
@@ -748,14 +748,14 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT \n    thread_id, \n    title, \n    created_at, \n    updated_at \nFROM threads \nORDER BY updated_at DESC \nLIMIT 50; ",
+        "query": "SELECT \n    thread_id, \n    username,\n    title, \n    created_at, \n    updated_at \nFROM threads \nWHERE username = '{{ $json.query.username }}'\nORDER BY updated_at DESC \nLIMIT 50;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
         -2064,
-        784
+        960
       ],
       "id": "40785255-336c-4490-9787-08968a58d18a",
       "name": "SQL: Fetch Threads",
@@ -776,7 +776,7 @@
       "typeVersion": 2.1,
       "position": [
         -2272,
-        1088
+        1552
       ],
       "id": "79aa2ed3-f70d-4e07-9072-02b6a3f9e89a",
       "name": "Webhook4",
@@ -792,7 +792,7 @@
       "typeVersion": 2.6,
       "position": [
         -2048,
-        1088
+        1552
       ],
       "id": "236acb98-2fd9-4983-94d1-8ccee8cc99bd",
       "name": "Execute a SQL query",
@@ -812,7 +812,7 @@
       "typeVersion": 1.4,
       "position": [
         -1840,
-        1088
+        1552
       ],
       "id": "587bdb46-add9-47a1-94cc-d2be75197b0c",
       "name": "Respond to Webhook4"
@@ -854,7 +854,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message with optional attachment\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
+        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, username, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.username }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET \n  updated_at = NOW(),\n  username = EXCLUDED.username;\n\n-- Then, insert the user message with optional attachment\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -875,7 +875,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- Optional: update thread's updated_at timestamp\nUPDATE threads\nSET updated_at = NOW()\nWHERE thread_id = '{{ $('Code in JavaScript').item.json.thread_id }}';\n\n-- Insert the new user message\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
+        "query": "-- Optional: update thread's updated_at timestamp\nUPDATE threads\nSET updated_at = NOW()\nWHERE thread_id = '{{ $('Code in JavaScript').item.json.thread_id }}'\n  AND username = '{{ $('Code in JavaScript').item.json.webhook_data.username }}';\n\n-- Insert the new user message\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -1026,7 +1026,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
+        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, username, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.username }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message\nINSERT INTO messages (thread_id, role, content, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, created_at;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -1463,7 +1463,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET updated_at = NOW();\n\n-- Then, insert the user message with optional attachment\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
+        "query": "-- First, ensure thread exists\nINSERT INTO threads (thread_id, username, title, created_at, updated_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.username }}',\n  '{{ $('Code in JavaScript').item.json.user_message.substring(0, 50) }}',\n  NOW(),\n  NOW()\n)\nON CONFLICT (thread_id) DO UPDATE SET \n  updated_at = NOW(),\n  username = EXCLUDED.username;\n\n-- Then, insert the user message with optional attachment\nINSERT INTO messages (thread_id, role, content, attachment_name, created_at)\nVALUES (\n  '{{ $('Code in JavaScript').item.json.thread_id }}',\n  'user',\n  '{{ $('Code in JavaScript').item.json.user_message }}',\n  '{{ $('Code in JavaScript').item.json.webhook_data.attachmentName || null }}',\n  NOW()\n)\nRETURNING message_id, thread_id, role, content, attachment_name, created_at;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -2457,7 +2457,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "da6c49fa-e073-4040-a84c-a8ae19413ece",
+  "versionId": "61e6a6d3-76af-4e67-a4b4-9ca316e036d2",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "55db16e65fdbec46bee6fd38a33a0a55061e4b974c6bd574b6e1877d5dc8fdab"
