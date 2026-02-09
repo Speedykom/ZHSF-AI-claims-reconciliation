@@ -84,7 +84,7 @@ const AIChatInterface = () => {
         if (keycloak.token) {
           headers['Authorization'] = `Bearer ${keycloak.token}`;
         }
-        const response = await fetch(`/api/messages?thread_id=${encodeURIComponent(selectedThreadId)}`, { headers });
+        const response = await fetch(`/api/messages?thread_id=${encodeURIComponent(selectedThreadId)}${user ? `&username=${encodeURIComponent(user.name || user.preferred_username || user.email || '')}` : ''}`, { headers });
         if (response.ok) {
           const data = await response.json();
           setMessages(data);
@@ -152,6 +152,14 @@ const AIChatInterface = () => {
         formData.append('file', uploadedFile);
         formData.append('attachmentName', uploadedFile.name);
       }
+      // Include username in the form data
+      if (user && user.name) {
+        formData.append('username', user.name);
+      } else if (user && user.preferred_username) {
+        formData.append('username', user.preferred_username);
+      } else if (user && user.email) {
+        formData.append('username', user.email);
+      }
 
       const headers: HeadersInit = {};
       if (keycloak.token) {
@@ -182,7 +190,7 @@ const AIChatInterface = () => {
 
         if (selectedThreadId || newThreadId) {
           const threadIdToFetch = selectedThreadId || newThreadId;
-          const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadIdToFetch)}`);
+          const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadIdToFetch)}${user ? `&username=${encodeURIComponent(user.name || user.preferred_username || user.email || '')}` : ''}`);
           if (messagesResponse.ok) {
             const data = await messagesResponse.json();
             setMessages(data);
@@ -217,7 +225,7 @@ const AIChatInterface = () => {
         if (keycloak.token) {
           headers['Authorization'] = `Bearer ${keycloak.token}`;
         }
-        const response = await fetch('/api/threads', { headers });
+        const response = await fetch(`/api/threads${user ? `?username=${encodeURIComponent(user.name || user.preferred_username || user.email || '')}` : ''}`, { headers });
         if (response.ok) {
           const data = await response.json();
           const threadsArray = Array.isArray(data) ? data : [data];
@@ -243,7 +251,7 @@ const AIChatInterface = () => {
         if (keycloak.token) {
           headers['Authorization'] = `Bearer ${keycloak.token}`;
         }
-        const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadId)}`, { headers });
+        const messagesResponse = await fetch(`/api/messages?thread_id=${encodeURIComponent(threadId)}${user ? `&username=${encodeURIComponent(user.name || user.preferred_username || user.email || '')}` : ''}`, { headers });
         if (messagesResponse.ok) {
           const data = await messagesResponse.json();
           if (data && data.length > 0) {
@@ -274,7 +282,7 @@ const AIChatInterface = () => {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
           >
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -319,6 +327,7 @@ const AIChatInterface = () => {
           setSelectedThreadId(null);
           setIsNewChatMode(true);
         }}
+        user={user}
       />
 
       <main className="flex-1 flex flex-col min-w-0 bg-white relative z-0">
@@ -374,7 +383,7 @@ const AIChatInterface = () => {
             {isMcpMode && (
               <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
                 <img src="/mcp-icon.svg" alt="MCP" className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden md:inline">Using MCP server with AI reconciliation tools; File attachment, RAG, OCR, and rules engine {" "} <span className="text-red-700 font-bold">are disabled.</span></span>
+                <span className="hidden md:inline">Using MCP server with AI reconciliation tools; File attachment, RAG, OCR, and rules engine {' '} <span className="text-red-700 font-bold">are disabled.</span></span>
                 <span className="md:hidden">MCP: AI tools active</span>
               </div>
             )}
