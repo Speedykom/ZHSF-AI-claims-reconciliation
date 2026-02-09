@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const n8nResponse = await fetch('http://n8n:5678/webhook/threads', {
+    const { searchParams } = new URL(request.url);
+    const username = searchParams.get('username');
+    
+    let n8nUrl = 'http://n8n:5678/webhook/threads';
+    if (username) {
+      n8nUrl += `?username=${encodeURIComponent(username)}`;
+    }
+
+    const n8nResponse = await fetch(n8nUrl, {
       method: 'GET',
     });
 
