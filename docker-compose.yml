@@ -50,7 +50,9 @@ services:
       - tanzania-network
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.120.1
+    build:
+      context: ./n8n
+      dockerfile: Dockerfile.n8n
     restart: unless-stopped
     ports:
       - "5678:5678"
@@ -67,6 +69,10 @@ services:
       - NODE_ENV=production
       - WEBHOOK_URL=http://localhost:5678/
       - N8N_PUBLIC_API_DISABLED=false
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - N8N_BLOCK_ENV_ACCESS_IN_EXPRESSIONS=false
+      - N8N_ALLOW_ENV_ACCESS_IN_NODE=true
+      - NODE_FUNCTION_ALLOW_EXTERNAL=pdf-img-convert
     volumes:
       - n8n_data:/home/node/.n8n
       - ./n8n:/home/external:rw
