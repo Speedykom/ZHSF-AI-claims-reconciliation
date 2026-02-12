@@ -19,7 +19,7 @@ const Message: React.FC<MessageProps> = ({ type, content, onCopy, isStreaming = 
       <div className="flex gap-4 group">
         <div className="flex-1 space-y-4 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm text-gray-900">AI Assistant</span>
+            <span className="font-semibold text-sm text-gray-900">Daktari Hakiki</span>
             {onCopy && (
               <button
                 onClick={onCopy}
