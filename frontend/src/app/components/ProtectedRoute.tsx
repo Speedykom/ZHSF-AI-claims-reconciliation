@@ -21,7 +21,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       }, 500);
 
       const redirectTimer = setTimeout(() => {
-        router.push('/login');
+        router.push('/');
       }, 2000);
 
       return () => {
